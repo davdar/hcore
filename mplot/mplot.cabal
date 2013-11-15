@@ -1,0 +1,29 @@
+author:              David Darais
+build-type:          Simple
+cabal-version:       >=1.10
+category:            Graphics
+license-file:        LICENSE
+license:             BSD3
+maintainer:          david.darais@gmail.com
+name:                mplot
+synopsis:            monadic interface to plotting with gnuplot
+version:             0.1.0.0
+
+library
+  build-depends:       base               == 4.6.*
+                     , bytestring         == 0.10.*
+                     , data-lens-template == 2.1.*
+                     , directory          == 1.2.*
+                     , fp-extras          == 0.1.*
+                     , int-indexed        == 0.1.*
+                     , matrix-indexed     == 0.1.*
+                     , process            == 1.1.*
+                     , vector-indexed     == 0.1.*
+                     -- , data-lens-fd       == 2.0.*
+                     -- , vector             == 0.10.*
+  default-language:    Haskell2010
+  exposed-modules:     Vis.Plot.Generic
+                     , Vis.Plot.Concrete
+                     , Vis.Plot.StateSpace
+                     , Vis.Plot
+  hs-source-dirs:      src

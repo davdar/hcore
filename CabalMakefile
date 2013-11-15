@@ -1,0 +1,24 @@
+.PHONY: build rebuild configure install reinstall clean interact reinstall-all
+
+build:
+	cabal build
+
+rebuild: clean build
+
+configure:
+	cabal configure
+
+install:
+	cabal install
+
+reinstall:
+	cabal install --force-reinstalls
+
+clean:
+	cabal clean
+
+interact:
+	ghci -isrc -XDataKinds -interactive-print=Text.Pretty.pprintLn Interact.hs
+
+reinstall-all:
+	make -C ../ reinstall

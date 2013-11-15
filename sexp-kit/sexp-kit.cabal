@@ -1,0 +1,22 @@
+author:              David Darais
+build-type:          Simple
+cabal-version:       >=1.8
+category:            Data
+license-file:        LICENSE
+license:             BSD3
+maintainer:          david.darais@gmail.com
+name:                sexp-kit
+synopsis:            An s-expression datatype, parser, and quasiquoter with antiquoting
+version:             0.1.0.0
+
+library
+  build-depends:       base == 4.6.*
+                     , template-haskell == 2.8.*
+                     , parsec == 3.1.*
+                     , to-qq == 0.1.*
+                     , parsec-qq == 0.1.*
+                     , mpretty == 0.1.*
+                     , text == 0.11.*
+  exposed-modules:     Data.SExp
+                     , Data.SExp.Data
+                     , Data.SExp.Parser
