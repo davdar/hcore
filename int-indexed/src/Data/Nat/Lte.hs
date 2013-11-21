@@ -9,13 +9,16 @@ import GHC.TypeLits hiding (type (<=))
 infix 8 <=
 infix 8 <
 data (<=) (i::Nat) (j::Nat) = LteAxiom
-type (<) i j = (i+1) <= j
+data (<) (i::Nat) (j::Nat) = LtAxiom
 
 unsafeLteAxiom :: i <= j
 unsafeLteAxiom = LteAxiom
 
 lteRefl :: i <= i
 lteRefl = LteAxiom
+
+lteFromLt :: i < j -> i <= j
+lteFromLt _ = LteAxiom
 
 lteZero :: 0 <= i
 lteZero = LteAxiom
@@ -29,11 +32,23 @@ lteSucc = LteAxiom
 lteTrans :: i <= j -> j <= k -> i <= k
 lteTrans _ _ = LteAxiom
 
+unsafeLtAxiom :: i < j
+unsafeLtAxiom = LtAxiom
+
 ltSucc :: i < i+1
-ltSucc = LteAxiom
+ltSucc = LtAxiom
 
 ltTrans :: i < j -> j < k -> i < k
-ltTrans _ _ = LteAxiom
+ltTrans _ _ = LtAxiom
 
 ltTransLte :: i < j -> j <= k -> i < k
-ltTransLte _ _ = LteAxiom
+ltTransLte _ _ = LtAxiom
+
+ltAbsurd :: i < j -> j < i -> a
+ltAbsurd _ _ = error "impossible"
+
+ltAbsurdLte :: i < j -> j <= i -> a
+ltAbsurdLte _ _ = error "impossible"
+
+lteAbsurdLt :: i <= j -> j < i -> a
+lteAbsurdLt _ _ = error "impossible"

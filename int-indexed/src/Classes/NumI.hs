@@ -17,9 +17,11 @@ type instance Zero = (0 :: Nat)
 type family Succ (i::k) :: k
 type instance Succ (i::Nat) = i + 1
 
+infixl 6 ^+
 type family (^+) (i::k) (j::k) :: k
 type instance (^+) (i::Nat) (j::Nat) = i + j
 
+infixl 7 ^*
 type family (^*) (i::k) (j::k) :: k
 type instance (^*) (i::Nat) (j::Nat) = i * j
 
@@ -32,8 +34,10 @@ class PeanoI t where
   succI :: t i -> t (Succ i)
   peanoCaseI :: t i -> PeanoCaseI t i
 
+infixl 6 |+|
 class AdditiveI t where
   (|+|) :: t i -> t j -> t (i ^+ j)
 
+infixl 7 |*|
 class MultiplicativeI t where
   (|*|) :: t i -> t j -> t (i ^* j)

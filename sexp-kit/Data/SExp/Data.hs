@@ -1,12 +1,13 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.SExp.Data where
 
-import Data.Monoid
-import Text.MPretty
-import Data.Maybe
-import Util.ToQQ
+import Prelude ()
+import FP
 import qualified Language.Haskell.TH as TH
+import qualified Text.Pretty.Generic as P
+import qualified Text.Pretty.StateSpace as P
 
 data Number =
     IntegerN Integer
@@ -52,27 +53,27 @@ consToList s1 (ConsS s2 s3) =
   in (s1:ss, cons)
 consToList s1 s2 = ([s1], Just s2)
 
-instance IsPretty Number where
+instance Pretty Number where
   pretty (IntegerN i) = pretty i
   pretty (DoubleN d) = pretty d
 instance Show Number where
-  show = showFromPretty
+  show = show'
 
-instance IsPretty Lit where
+instance Pretty Lit where
   pretty (NumberL n) = pretty n
   pretty (StringL s) = pretty s
 instance Show Lit where
-  show = showFromPretty
+  show = show'
 
-instance IsPretty SExp where
-  pretty = noBuffer . style PostStyle . pretty'
+instance Pretty SExp where
+  pretty = P.noBuffer . localViewSet (P.styleL . P.styleOptionsL) P.PostStyle . pretty'
     where
       pretty' (LitS l) = pretty l
-      pretty' (SymS s) = text $ pString s
-      pretty' NullS = punctuation $ text $ pString "()"
+      pretty' (SymS s) = P.string s
+      pretty' NullS = P.punctuation $ P.text "()"
       pretty' (ConsS sl sr) =
         let (ss, cons) = consToList sl sr
-        in sexpListCons (map pretty ss) (fmap pretty cons)
+        in P.sexpListCons (map pretty ss) (fmap pretty cons)
       pretty' (AntiS anti s) =
         let antiCode a = case a of
               ValA -> ""
@@ -83,12 +84,12 @@ instance IsPretty SExp where
               StrA -> "str"
               SymA -> "sym"
         in do
-          text $ pString "@"
-          text $ pString $ antiCode anti
-          text $ pString ":"
-          text $ pString s
+          P.text "@"
+          P.text $ antiCode anti
+          P.text ":"
+          P.string s
 instance Show SExp where
-  show = showFromPretty
+  show = show'
         
 -- QQ
 

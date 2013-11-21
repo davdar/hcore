@@ -11,12 +11,13 @@ import Unsafe.Coerce
 import Prelude ()
 import FP
 import Data.V.Prim (V, Prim)
+import qualified Data.V.Generic as V
 import Data.M.Generic
 import Data.Int.Indexed
 import Data.Packed.Matrix (Matrix, Element)
 import Foreign.Storable
-import qualified Numeric.GSL as HM
 import qualified Data.Packed.Matrix as HM
+import qualified Numeric.LinearAlgebra.Algorithms as HM
 
 data M i j a = M 
   { mRows :: {-# UNPACK #-} !(SInt i)
@@ -53,12 +54,3 @@ instance (Prim a, Pretty a) => Pretty (M i j a) where
   pretty = _pretty pretty
 instance (Prim a, Show a) => Show (M i j a) where
   show = showPretty . _pretty prettyFromShow
-
-toHM :: (Element a, Prim a) => M i j a -> Matrix a
-toHM m = HM.buildMatrix (stripI $ rows m) (stripI $ cols m) (\ (i,j) -> m ! (unsafeI i, unsafeI j))
-
-fromHM :: (Storable a, Prim a) => Matrix a -> (forall i j. M i j a -> b) -> b
-fromHM m k = k $ build (unsafeI $ HM.rows m) (unsafeI $ HM.cols m) (\ (i,j) -> m HM.@@> (stripI i, stripI j))
-
-unsafeFromHM :: forall i j a. (Storable a, Prim a) => Matrix a -> M i j a
-unsafeFromHM m = fromHM m (unsafeCoerce :: forall i i' j j'. M i j a -> M i' j' a)

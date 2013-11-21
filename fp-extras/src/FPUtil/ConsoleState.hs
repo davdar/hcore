@@ -7,7 +7,7 @@ import System.Console.ANSI
 import Data.Lens.Template
 import Data.Maybe
 import Control.Monad
-import Data.Lens
+import Data.Lens.Common
 
 data ConsoleState = ConsoleState
   { _intensityML :: Maybe ConsoleIntensity

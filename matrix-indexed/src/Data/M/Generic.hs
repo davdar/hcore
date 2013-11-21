@@ -13,16 +13,21 @@
 
 module Data.M.Generic where
 
+import Control.Monad.ST
 import qualified Data.Text.Lazy as T
 import Data.Text.Lazy (Text)
 import Prelude ()
 import FP
 import Data.Int.Indexed
-import Data.V.Generic (IVector, UnIndexedV)
+import Data.V.Generic (IVector, UnIndexedV, IVectorComplete)
 import qualified Data.V.Generic as V
+import qualified Data.Vector.Generic as Vector
+import qualified Data.Vector.Generic.Mutable as MVector
+import Data.Vector.Generic (Mutable)
 import Text.Pretty.Generic as P
 import Text.Pretty.StateSpace as P
 import qualified Data.List as List
+import Data.L (L)
 
 class (IVector (FlatM t) a) => IMatrix (t::Nat -> Nat -> * -> *) a where
   type FlatM t :: Nat -> * -> *
@@ -30,6 +35,12 @@ class (IVector (FlatM t) a) => IMatrix (t::Nat -> Nat -> * -> *) a where
   unrollM :: t i j a -> FlatM t (i*j) a
   rowsM :: t i j a -> SInt i
   colsM :: t i j a -> SInt j
+
+type IMatrixComplete t i j a = 
+  ( IdxIterable (t i j a), Elem (t i j a) ~ a, Index (t i j a) ~ (BInt i, BInt j)
+  , IdxIterable (FlatM t i a), Elem (FlatM t i a) ~ a, Index (FlatM t i a) ~ BInt i
+  , IdxIterable (FlatM t j a), Elem (FlatM t j a) ~ a, Index (FlatM t j a) ~ BInt j
+  )
 
 -- Helpers
 fromFlatIndex :: SInt j -> BInt (i*j) -> (BInt i, BInt j)
@@ -42,6 +53,9 @@ toFlatIndex jS (iB, jB) = unsafeI $ stripI iB * stripI jS + stripI jB
 build :: (IMatrix t a) => SInt i -> SInt j -> ((BInt i, BInt j) -> a) -> t i j a
 build iS jS f = rollM iS jS $ V.build (iS |*| jS) $ f . fromFlatIndex jS
 
+fromLRows :: (IMatrix t a) => SInt i -> SInt j -> L (i*j) a -> t i j a
+fromLRows iS jS = rollM iS jS . V.fromL
+
 buildM :: (Monad m, IMatrix t a) => SInt i -> SInt j -> ((BInt i, BInt j) -> m a) -> m (t i j a)
 buildM iS jS f = liftM (rollM iS jS) $ V.buildM (iS |*| jS) $ f . fromFlatIndex jS
 
@@ -51,18 +65,22 @@ fill iS jS = build iS jS . const
 fillM :: (Monad m, IMatrix t a) => SInt i -> SInt j -> m a -> m (t i j a)
 fillM iS jS = buildM iS jS . const
 
-rowVector :: forall t i j a. (IMatrix t a) => FlatM t j a -> t 1 j a
-rowVector v = withEqRefl (timesIdentityL :: j :=: (1 * j)) $ rollM (sint :: SInt 1) (V.length v) v
+rowFromVector :: forall t i j a. (IMatrix t a) => FlatM t j a -> t 1 j a
+rowFromVector v = withEqRefl (timesIdentityL :: j :=: (1 * j)) $ rollM (sint :: SInt 1) (V.length v) v
 
-colVector :: forall t i j a. (IMatrix t a) => FlatM t i a -> t i 1 a
-colVector v = withEqRefl (timesIdentityR :: i :=: (i * 1)) $ rollM (V.length v) (sint :: SInt 1) v
+colFromVector :: forall t i j a. (IMatrix t a) => FlatM t i a -> t i 1 a
+colFromVector v = withEqRefl (timesIdentityR :: i :=: (i * 1)) $ rollM (V.length v) (sint :: SInt 1) v
 
 fromNested :: 
-  ( IMatrix m a
-  , IdxIterable (v1 (v2 a)), Index (v1 (v2 a)) ~ BInt i, Elem (v1 (v2 a)) ~ v2 a
-  , IdxIterable (v2 a), Index (v2 a) ~ BInt j, Elem (v2 a) ~ a
-  ) => SInt i -> SInt j -> v1 (v2 a) -> m i j a
+  ( IMatrix t a        , IMatrixComplete t i j a
+  , IVector v1 (v2 j a), IVectorComplete v1 i (v2 j a)
+  , IVector v2 a       , IVectorComplete v2 j a
+  ) => SInt i -> SInt j -> v1 i (v2 j a) -> t i j a
 fromNested iS jS vv = build iS jS $ \ (iB, jB) -> vv ! iB ! jB
+
+diag :: (IMatrix t a, Num a) => SInt i -> a -> t i i a
+diag iS x = build iS iS $ \ (iB, jB) ->
+  if iB == jB then x else 0
 
 -- Elimination
 _iiterOnL :: (IMatrix t a) => ((BInt i, BInt j) -> a -> b -> b) -> t i j a -> b -> b
@@ -76,6 +94,18 @@ toListRows m =
   iterDoR (rows m) [] $ \ iB ->
     (:) $ {- (iB,) $ -} iterDoR (cols m) [] $ \ jB ->
       (:) $ {- (jB,) $ -} m `_index` (iB, jB)
+
+colToVector :: forall t i a. (IMatrix t a) => t i 1 a -> FlatM t i a
+colToVector m = withEqRefl (timesIdentityR :: i :=: (i * 1)) $ unrollM m
+
+rowToVector :: forall t j a. (IMatrix t a) => t 1 j a -> FlatM t j a
+rowToVector m  = withEqRefl (timesIdentityL :: j :=: (1 * j)) $ unrollM m
+
+getDiag :: (IMatrix t a, IMatrixComplete t i i a) => t i i a -> FlatM t i a
+getDiag m = V.build (rows m) $ \ iB -> m ! (iB, iB)
+
+fromSingleton :: (IMatrix t a, IMatrixComplete t 1 1 a) => t 1 1 a -> a
+fromSingleton m = m ! (unsafeI 0, unsafeI 0)
 
 -- Mapping
 _icmapM :: (Monad m, IMatrix t a, IMatrix t b) => ((BInt i, BInt j) -> a -> m b) -> t i j a -> m (t i j b)
@@ -109,6 +139,27 @@ colConcat m1 m2 =
       then m1 `_index` (iB, unsafeI j)
       else m2 `_index` (iB, unsafeI $ j - c1)
 
+infixl 6 %+%
+(%+%) :: (Num a, IMatrix t a, IMatrixComplete t i j a) => t i j a -> t i j a -> t i j a
+(%+%) m1 m2 = build (rows m1) (cols m1) $ \ idx -> m1 ! idx + m2 ! idx
+
+infixl 6 %-%
+(%-%) :: (Num a, IMatrix t a, IMatrixComplete t i j a) => t i j a -> t i j a -> t i j a
+(%-%) m1 m2 = build (rows m1) (cols m1) $ \ idx -> m1 ! idx - m2 ! idx
+
+infixl 7 %*%
+(%*%) :: (Num a, IMatrix t a, IMatrixComplete t i j a, IMatrixComplete t j k a) => t i j a -> t j k a -> t i k a
+(%*%) m1 m2 = build (rows m1) (cols m2) $ \ (iS, kS) -> getRow iS m1 V.%*% getCol kS m2
+
+getRow :: (IMatrix t a, IMatrixComplete t i j a) => BInt i -> t i j a -> FlatM t j a
+getRow iB m = V.build (cols m) $ \ jB -> m ! (iB, jB)
+
+getCol :: (IMatrix t a, IMatrixComplete t i j a) => BInt j -> t i j a -> FlatM t i a
+getCol jB m = V.build (rows m) $ \ iB -> m ! (iB, jB)
+
+trans :: (IMatrix t a, IMatrixComplete t i j a) => t i j a -> t j i a
+trans m = build (cols m) (rows m) $ (!) m . swap
+
 -- Printing
 _pretty :: forall m t i j a. (MonadPretty m, IMatrix t a) => PrettyF a -> t i j a -> m ()
 _pretty prettyA m = do
@@ -138,7 +189,7 @@ _pretty prettyA m = do
 
       chopInto :: forall a. Int -> [a] -> [[a]]
       chopInto i l
-        | length l <= i = [l]
+        | List.length l <= i = [l]
         | otherwise = take i l : chopInto i (drop i l)
 
       -- example of transpose step in chopped

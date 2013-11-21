@@ -59,6 +59,12 @@ forLM t f = iterOnL (flip (>>) . f) t $ return ()
 forRM :: (Monad m, Iterable t) => t -> (Elem t -> m ()) -> m ()
 forRM t f = iterOnR (flip (>>) . f) t $ return ()
 
+mapReduceDo :: (Iterable t) => t -> (b -> b -> b) -> b -> (Elem t -> b) -> b
+mapReduceDo t r z f = iterL (r . f) z t
+
+mapReduceDoM :: (Monad m, Iterable t) => t -> (b -> b -> b) -> b -> (Elem t -> m b) -> m b
+mapReduceDoM t r z f = iterLM (\ e b -> liftM (r b) $ f e) z t
+
 forBetweenLM :: (Monad m, Iterable t) => t -> m () -> (Elem t -> m ()) -> m ()
 forBetweenLM t sep f = flip evalStateT True $ forLM t $ \ e -> do
   isFirst <- get
@@ -69,6 +75,7 @@ forBetweenLM t sep f = flip evalStateT True $ forLM t $ \ e -> do
 toList :: (Iterable t) => t -> [Elem t]
 toList = iterR (:) []
 
+infixl 9 !
 class (Iterable t) => IdxIterable t where
   type Index t :: *
   iiterOnL :: (Index t -> Elem t -> b -> b) -> t -> b -> b

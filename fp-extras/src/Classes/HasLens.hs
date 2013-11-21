@@ -10,7 +10,7 @@ import FPUtil.Monad
 import Control.Arrow
 import Prelude hiding (id, (.))
 import Control.Category
-import Data.Lens
+import Data.Lens.Common
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.State

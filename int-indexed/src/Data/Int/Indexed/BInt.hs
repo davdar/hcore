@@ -1,13 +1,14 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -22,7 +23,6 @@ import Classes.NumI
 
 newtype BInt (i::Nat) = BInt { unBInt :: Int }
   deriving (Eq, Ord)
-
 instance Indexed BInt where
   type UnIndexed BInt = Int
   stripI = unBInt
@@ -33,6 +33,8 @@ instance MultiplicativeI BInt where
   (|*|) = _times
 instance Pretty (BInt i) where
   pretty = _pretty
+instance Show (BInt i) where
+  show = show'
 
 -- Combination
 _plus :: BInt i -> BInt j -> BInt (i+j)

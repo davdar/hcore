@@ -20,8 +20,8 @@ import Data.Monoid
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as T
 import FPUtil.ConsoleState
+import Data.Lens.Common
 import Data.Lens.Template
-import Data.Lens
 import Classes.HasLens
 
 data Layout = Flat | Break

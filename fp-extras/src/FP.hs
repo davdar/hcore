@@ -22,13 +22,14 @@ module FP
   , module Data.Compose
   , module Data.Ex
   , module Data.ExI
-  , module Data.Lens
-  , module Debug.Trace
+  , module Data.Lens.Common
   , module Data.Lib
   , module Data.Maybe
   , module Data.Monoid
   , module Data.Tuple
   , module FPUtil.Bool
+  , module FPUtil.Double
+  , module FPUtil.Either
   , module FPUtil.Function
   , module FPUtil.Functor
   , module FPUtil.List
@@ -63,19 +64,20 @@ import Data.Char
 import Data.Compose
 import Data.Ex
 import Data.ExI
-import Data.Lens
+import Data.Lens.Common
 import Data.Lib
 import Data.Maybe
-import Debug.Trace
 import Data.Monoid
 import Data.Tuple
 import FPUtil.Bool
+import FPUtil.Double
+import FPUtil.Either
 import FPUtil.Function
 import FPUtil.Functor
 import FPUtil.List
 import FPUtil.Monad
 import FPUtil.Monoid
 import FPUtil.String
-import Prelude hiding (id, (.), mapM)
+import Prelude hiding (id, (.), mapM, length)
 import Text.Pretty
 import Text.Printf

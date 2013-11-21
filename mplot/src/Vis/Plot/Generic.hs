@@ -10,8 +10,8 @@ module Vis.Plot.Generic where
 
 import Debug.Trace
 import Data.Int.Indexed
-import Data.M.Prim (M)
-import Data.V.Prim (V)
+import Data.M.Storable (M)
+import Data.V.Storable (V)
 import FP
 import Prelude ()
 import System.Cmd
@@ -20,8 +20,8 @@ import System.IO
 import Vis.Plot.StateSpace
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.M.Generic as M
-import qualified Data.V.Generic as V
-import qualified Data.V.Prim as VP
+import qualified Data.V.Generic as V hiding (build, singleton)
+import qualified Data.V.Storable as V
 import qualified Data.V.Boxed as VB
 import qualified Data.List as List
 
@@ -34,8 +34,8 @@ noCleanup = local $ modL (cleanupL . view) $ const False
 xRange :: (MonadPlot m) => (Double, Double) -> m a -> m a
 xRange r = local $ modL (xRangeL . view) $ const $ Just r
 
-plotData :: (MonadPlot m) => Style -> M i j Double -> m ()
-plotData style m = do
+plotData :: (MonadPlot m) => Style -> Options -> M i j Double -> m ()
+plotData style options m = do
   title <- askView titleL
   (tmpn,tmph) <- liftIO $ openTempFile "." $ slugify title ++ ".dat"
   liftIO $ do
@@ -44,11 +44,25 @@ plotData style m = do
       BS.hPut tmph $ BS.pack $ show e
       when (stripI jB == stripI (M.cols m) - 1) $ BS.hPut tmph "\n"
     hClose tmph
-  tellPlotInfo $ PlotInfo tmpn title style
+  tellPlotInfo $ PlotInfo tmpn title style options
 
 plotLines :: (MonadPlot m) => V i Double -> V i Double -> m ()
-plotLines xs ys = plotData "lines" $ 
-  M.colConcat (M.colVector xs) (M.colVector ys)
+plotLines xs ys = plotData "lines" [] $ 
+  M.colFromVector xs `M.colConcat` M.colFromVector ys
+
+plotPoints :: (MonadPlot m) => V i Double -> V i Double -> m ()
+plotPoints xs ys = do
+  size <- askView pointSizeL
+  shape  <- askView pointShapeL
+  let options = [["pointsize", show size], ["pointtype", show $ pointShapeCode shape]]
+  plotData "points" options $
+    M.colFromVector xs `M.colConcat` M.colFromVector ys
+
+plotLinesError :: (MonadPlot m) => V i Double -> V i Double -> V i Double -> V i Double -> m ()
+plotLinesError xs ys ysLow ysHigh = do
+  plotData "filledcurves" [["linecolor", "rgb '#bbbbbb'"]] $
+    M.colFromVector xs `M.colConcat` M.colFromVector ysLow `M.colConcat` M.colFromVector ysHigh
+  plotLines xs ys
 
 getXs :: (MonadPlot m) => m (ExI V Double)
 getXs = do
@@ -94,7 +108,7 @@ makeHist binsS binWidth minVal v =
                 then r + 1.0 / numData
                 else r
         in withEqRefl (unsafeEqRefl :: (1+1) :=: 2) $ 
-          VP.singleton center `V.concat` VP.singleton freq
+          V.singleton center `V.concat` V.singleton freq
   in M.fromNested binsS sint vv
 
 -- hist2 :: forall i. V i Double -> M i 2 Double
@@ -107,7 +121,7 @@ plotHist :: (MonadPlot m) => V i Double -> m ()
 plotHist v = do
   numBinsEx <- liftM sintEx $ askView numBinsL
   unEx numBinsEx $ \ numBinsS ->
-    plotData "boxes" $ inferHist numBinsS v
+    plotData "boxes" [] $ inferHist numBinsS v
 
 display :: (MonadPlot m) => m () -> m ()
 display t = censor (const mempty) $ do
@@ -124,8 +138,9 @@ display t = censor (const mempty) $ do
     let cmdArgs :: String
         cmdArgs = 
           List.intercalate "," $
-          flip map infos $ \ (PlotInfo file title style) -> 
-            printf "'%s' title '%s' with %s" file title style
+          flip map infos $ \ (PlotInfo file title style options) -> 
+            let optionsS = unwords $ map unwords options
+            in printf "'%s' title '%s' with %s %s" file title style optionsS
         cmd :: String
         cmd = 
           printf 
@@ -134,6 +149,7 @@ display t = censor (const mempty) $ do
               , "set term pngcairo enhanced ;"
               , "set output '"
               , outFile
+              , ".png"
               , "' ;plot [%s] [%s] %s\""
               ])
             (maybe "" gpRange xrM) (maybe "" gpRange yrM) 
@@ -145,7 +161,7 @@ display t = censor (const mempty) $ do
     void $ system cmd
 
     when cleanup $
-      forM_ infos $ \ (PlotInfo file _ _) ->
-        removeFile file
+      forM_ infos $ \ info ->
+        removeFile $ plotFilename info
   where
     gpRange (l,u) = show l ++ ":" ++ show u

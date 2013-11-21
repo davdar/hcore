@@ -18,7 +18,7 @@ clean:
 	cabal clean
 
 interact:
-	ghci -isrc -XDataKinds -interactive-print=Text.Pretty.pprintLn Interact.hs
+	ghci -isrc -XDataKinds -XScopedTypeVariables -XTypeOperators -interactive-print=Text.Pretty.pprintLn Interact.hs
 
 reinstall-all:
 	make -C ../ reinstall

@@ -16,6 +16,6 @@ library
                      , list-indexed == 0.1.*
                      , int-indexed  == 0.1.*
   default-language:    Haskell2010
-  exposed-modules:     Data.V.Boxed, Data.V.Generic, Data.V.Prim
+  exposed-modules:     Data.V.Boxed, Data.V.Generic, Data.V.Prim, Data.V.Storable
   ghc-options:         -Wall -O2
   hs-source-dirs:      src

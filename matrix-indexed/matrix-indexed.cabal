@@ -16,8 +16,11 @@ library
                      , int-indexed    == 0.1.*
                      , text           == 0.11.*
                      , hmatrix        == 0.15.*
+                     , vector         == 0.10.*
+                     , list-indexed   == 0.1.*
   default-language:    Haskell2010
   exposed-modules:     Data.M.Boxed
                      , Data.M.Generic
                      , Data.M.Prim
+                     , Data.M.Storable
   hs-source-dirs:      src

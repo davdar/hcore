@@ -7,25 +7,25 @@
 
 module Text.Pretty.Generic where
 
-import Data.List hiding (group)
-import Data.Monoid
-import Classes.Iterable
-import FPUtil.Bool
 import Classes.HasLens
-import Prelude hiding (id, (.))
+import Classes.Iterable
 import Classes.PartialOrder
-import Data.Char
 import Control.Category
 import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
-import Data.Lens
-import System.Console.ANSI
-import Text.Pretty.StateSpace
+import Data.Char
+import Data.Lens.Common
+import Data.List hiding (group)
+import Data.Monoid
+import Data.Text.Lazy (Text)
+import FPUtil.Bool
 import FPUtil.ConsoleState
 import FPUtil.List
-import Data.Text.Lazy (Text)
+import Prelude hiding (id, (.))
+import System.Console.ANSI
+import Text.Pretty.StateSpace
 import qualified Data.Text.Lazy as T
 
 ----- "Primitives" -----

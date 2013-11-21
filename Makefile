@@ -8,9 +8,8 @@ build:
 	make -C matrix-indexed build
 	make -C mplot          build
 	make -C ml             build
-	make -C mpretty        build
-	make -C rbtreez        build
-	make -C sexp-kit       build
+	# make -C rbtreez        build
+	# make -C sexp-kit       build
 
 reinstall:
 	make -C fp-extras      clean reinstall
@@ -20,6 +19,5 @@ reinstall:
 	make -C matrix-indexed clean reinstall
 	make -C mplot          clean reinstall
 	make -C ml             clean reinstall
-	make -C mpretty        clean reinstall
-	make -C rbtreez        clean reinstall
-	make -C sexp-kit       clean reinstall
+	# make -C rbtreez        clean reinstall
+	# make -C sexp-kit       clean reinstall

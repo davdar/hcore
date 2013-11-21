@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
@@ -11,8 +12,9 @@
 
 module Data.Int.Indexed.SInt
   ( SInt, sint, sintEx
+  , ICompare(..), icompare
   , plusIdentity, timesIdentityL, timesIdentityR
-  , bint
+  , bint, bintExtend, bintElim
   ) where
 
 import Prelude ()
@@ -20,7 +22,7 @@ import FP
 import Data.Nat.Lte
 import Classes.NumI
 import Unsafe.Coerce
-import GHC.TypeLits
+import GHC.TypeLits hiding (type (<=))
 import Data.Int.Indexed.BInt
 
 newtype SInt (i::Nat) = SInt { unSInt :: Int }
@@ -43,6 +45,8 @@ instance Iterable (SInt i) where
   iterOnR = _iterOnR
 instance Pretty (SInt i) where
   pretty = _pretty
+instance Show (SInt i) where
+  show = show'
 
 -- Introduction
 sint :: forall (i::Nat). (SingI i) => SInt i
@@ -61,12 +65,12 @@ _peanoCaseI (SInt i)
 _iterOnL :: (BInt i -> a -> a) -> SInt i -> a -> a
 _iterOnL f iS = case peanoCaseI iS of
   CaseZeroI -> id
-  CaseSuccI iS' -> f (bint iS' lteRefl) .! _iterOnL (f . bump) iS'
+  CaseSuccI iS' -> f (bint iS' ltSucc) .! _iterOnL (f . bump) iS'
 
 _iterOnR :: (BInt i -> a -> a) -> SInt i -> a -> a
 _iterOnR f iS = case peanoCaseI iS of
   CaseZeroI -> id
-  CaseSuccI iS' -> _iterOnR (f . bump) iS' . f (bint iS' lteRefl)
+  CaseSuccI iS' -> _iterOnR (f . bump) iS' . f (bint iS' ltSucc)
 
 -- Combination
 _zeroI :: SInt 0
@@ -80,6 +84,17 @@ _plus x y = unsafeI $ stripI x + stripI y
 
 _times :: SInt i -> SInt j -> SInt (i*j)
 _times x y = unsafeI $ stripI x * stripI y
+
+data ICompare i j where
+  ILt :: i < j -> ICompare i j
+  IEq :: (i ~ j) => ICompare i j
+  IGt :: j < i -> ICompare i j
+
+icompare :: forall i j. SInt i -> SInt j -> ICompare i j
+icompare iS jS = case compare (stripI iS) (stripI jS) of
+  LT -> ILt unsafeLtAxiom
+  EQ -> withEqRefl (unsafeEqRefl :: i :=: j) IEq
+  GT -> IGt unsafeLtAxiom
 
 -- Printing
 _pretty :: (MonadPretty m) => SInt i -> m ()
@@ -99,4 +114,12 @@ timesIdentityR = unsafeEqRefl
 
 -- Introduction
 bint :: SInt i -> i < j -> BInt j
-bint i LteAxiom = unsafeI $ stripI i
+bint iS _ = unsafeI $ stripI iS
+
+bintExtend :: BInt i -> i <= j -> BInt j
+bintExtend iB iLtej = bintElim iB $ \ kS kLti ->
+  bint kS $ ltTransLte kLti iLtej
+
+-- Elimination
+bintElim :: BInt j -> (forall i. SInt i -> i < j -> b) -> b
+bintElim iB k = k (unsafeI $ stripI iB) unsafeLtAxiom

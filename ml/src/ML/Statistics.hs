@@ -1,6 +1,7 @@
 module ML.Statistics where
 
-import Control.Monad.Trans
+import Prelude ()
+import FP
 import Statistics.Distribution
 import ML.MonadGen
 

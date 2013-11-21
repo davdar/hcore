@@ -10,7 +10,9 @@ synopsis:            lists indexed by their length
 version:             0.1.0.0
 
 library
-  build-depends:       base == 4.6.*
+  build-depends:       base        == 4.6.*
+                     , fp-extras   == 0.1.*
+                     , int-indexed == 0.1.*
   default-language:    Haskell2010
   exposed-modules:     Data.L
   ghc-options:         -Wall -O2

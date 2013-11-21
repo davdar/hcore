@@ -11,7 +11,7 @@ version:             0.1.0.0
 
 library
   build-depends:       base               == 4.6.*
-                     , data-lens-fd       == 2.0.*
+                     , data-lens          == 2.0.*
                      , data-lens-template == 2.1.*
                      , template-haskell   == 2.8.*
                      , containers         == 0.5.*
@@ -19,6 +19,7 @@ library
                      , ansi-terminal      == 0.6.*
                      , text               == 0.11.*
                      , process            == 1.1.*
+                     , MaybeT             == 0.1.*
   default-language:    Haskell2010
   exposed-modules:     Classes.CFunctor
                      , Classes.HasLens
@@ -37,6 +38,8 @@ library
                      , FP
                      , FPUtil.Bool
                      , FPUtil.ConsoleState
+                     , FPUtil.Double
+                     , FPUtil.Either
                      , FPUtil.Function
                      , FPUtil.Functor
                      , FPUtil.List

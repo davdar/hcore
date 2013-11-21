@@ -1,30 +1,26 @@
 module Data.SExp.Parser where
 
-import Control.Applicative
-import Control.Exception
-import Control.Monad
-import Data.Functor
-import Data.Maybe
+import Prelude ()
+import FP
 import Data.SExp.Data
-import Text.Printf
-import Util.ParsecQQ
 import qualified Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.Quote as TH
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Prim as P
 import qualified Text.Parsec.String as P
+import FPUtil.ParserQQ
 
 sexp :: TH.QuasiQuoter
-sexp = mkQQ $ runParser psexp
+sexp = parserQQ $ runParser psexp
 
 slist :: TH.QuasiQuoter
-slist = mkQQ $ right (uncurry sexpFromList) . runParser pslist
+slist = parserQQ $ right (uncurry sexpFromList) . runParser pslist
   where
     right f (Left x) = Left x
     right f (Right x) = Right $ f x
 
-runParser :: TokParser a -> String -> Either P.ParseError a
-runParser p s = do
+runParser :: TokParser a -> String -> Either String a
+runParser p s = mapLeft (show :: P.ParseError -> String) $ do
   ts <- P.runP tokenize () "" s
   let ts' = flip filter ts $ \pt -> 
         let t = pgetToken pt

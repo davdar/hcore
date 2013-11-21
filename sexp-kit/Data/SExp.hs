@@ -5,10 +5,11 @@ module Data.SExp
   , module Data.SExp.Parser
   ) where
 
+import Prelude ()
+import FP
 import Data.SExp.Data
 import Data.SExp.Parser
 import qualified Data.Text.Lazy.IO as T
-import Text.MPretty
 
 haskellSExp :: SExp
 haskellSExp = [sexp| (haskell var) |]
@@ -39,4 +40,4 @@ example =
   |]
 
 main :: IO ()
-main = T.putStr $ execPretty $ pretty example
+main = pprintLn example

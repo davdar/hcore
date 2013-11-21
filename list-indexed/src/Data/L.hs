@@ -2,16 +2,18 @@
 {-# LANGUAGE KindSignatures #-}
 
 module Data.L
-  ( L, unsafe, strip
+  ( L, stripL, unsafeL
   ) where
 
-import GHC.TypeLits
+import Prelude ()
+import FP
+import Data.Int.Indexed
 
 newtype L (i::Nat) a = L { unL :: [a] }
   deriving (Eq, Ord)
 
-unsafe :: [a] -> L i a
-unsafe = L
+stripL :: L i a -> [a]
+stripL = unL
 
-strip :: L i a -> [a]
-strip = unL
+unsafeL :: [a] -> L i a
+unsafeL = L
