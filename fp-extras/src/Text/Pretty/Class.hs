@@ -34,9 +34,6 @@ class Pretty a where
     encloseSepDropIndent "[" "]" ","
     . map pretty
 
-instance (Show a) => Pretty a where
-  pretty = string . show
-
 instance Pretty Bool where
   pretty = literal . string . show
 instance Pretty Int where

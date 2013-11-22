@@ -47,6 +47,8 @@ instance IdxCTraversable (V i) where
   icmapM = V._icmapM
 instance (Pretty a) => Pretty (V i a) where
   pretty = V._pretty prettyDropIndent
+instance (Pretty a) => PrettyExI V a where
+  prettyExI = pretty
 instance (Show a) => Show (V i a) where
   show = showPretty . V._pretty prettyFromShow
 

@@ -29,8 +29,8 @@ pointShapeCode (Ascii x) = '\'':x:'\'':""
 
 data PlotEnv = PlotEnv
   { _titleL :: String
-  , _xRangeL :: Maybe (Double, Double)
-  , _yRangeL :: Maybe (Double, Double)
+  , _xRangeL :: (Maybe Double, Maybe Double)
+  , _yRangeL :: (Maybe Double, Maybe Double)
   , _resolutionL :: Int
   , _loggingL :: Bool
   , _cleanupL :: Bool
@@ -44,8 +44,8 @@ makeLens ''PlotEnv
 defaultPlotEnv :: PlotEnv
 defaultPlotEnv = PlotEnv
   { _titleL = ""
-  , _xRangeL = Nothing
-  , _yRangeL = Nothing
+  , _xRangeL = (Nothing, Nothing)
+  , _yRangeL = (Nothing, Nothing)
   , _resolutionL = 200
   , _loggingL = True
   , _cleanupL = True
@@ -55,12 +55,20 @@ defaultPlotEnv = PlotEnv
   , _pointShapeL = OpenCircle
   }
 
+histPlotEnv :: PlotEnv
+histPlotEnv = defaultPlotEnv
+  { _yRangeL = (Just 0, Nothing)
+  }
+
 type Style = String
 type Options = [[String]]
 
+-- TODO: maybe xrange and yrange part of the plot info, and take the max
+-- for the final plot??
 data PlotInfo = PlotInfo
   { plotFilename :: FilePath
   , plotTitle :: String
+  , plotUsing :: String
   , plotStyle :: Style
   , plotOptions :: [[String]]
   }

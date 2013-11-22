@@ -32,6 +32,12 @@ lteSucc = LteAxiom
 lteTrans :: i <= j -> j <= k -> i <= k
 lteTrans _ _ = LteAxiom
 
+lteFromLtSucc :: i < (j + 1) -> i <= j
+lteFromLtSucc _ = LteAxiom
+
+lteSuccFromLt :: i < j -> (i + 1) <= j
+lteSuccFromLt _ = LteAxiom
+
 unsafeLtAxiom :: i < j
 unsafeLtAxiom = LtAxiom
 

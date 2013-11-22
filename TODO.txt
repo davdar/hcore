@@ -1,0 +1,54 @@
+- Make a 'sequence' class:
+  + for:
+    * lists
+    * vectors
+    * matrices
+  + has:
+    * introduction (build)
+    * elimination (iteration)
+    * mapReduce (to be specialized)
+- Extend it with
+  + indexing
+- Make indexed version of 'sequence' class
+- Make a 2d version of above
+
+    [CFunctor]                                                 
+    mapM :: (Monad m, Compat t a, Compat t b) -> (a -> m b) -> t a -> m (t b)
+
+    [Indexed]
+    (!) :: (Compat t a) => t a -> Index t -> a
+    \/
+    [Sequence] depends [CFunctor]
+    [] Vector                                                      
+    fill :: (Compat t a) => Int -> a -> t a
+    \/
+    [Sequence2D] depends [CFunctor]
+    Matrix
+    fill2d :: (Compat t a) => Int -> Int -> a -> t a
+
+       
+    [SIndexed]
+    (!!) :: (Compat t a) => t i a -> SIndex t i -> a
+    \/
+    [SSequence] depends [CFunctor]    
+    V L                                                            
+    sfill :: (Compat t a) => SInt i -> a -> t i a                                  
+    \/
+    [SSequence2D] depends [CFunctor]
+    M                                                                                                                                      
+    sfill2d :: (Compat t a) => SInt i -> SInt j -> a -> t i j a
+    siiter2d :: (Compat t a) => (BInt i -> BInt j -> a -> b -> b) -> b -> t i j a -> b
+
+for vectors/matrices use:
+  boxed
+  unboxed
+  storable
+
+types:
+  SInt
+  BInt
+  SStream
+  SList
+  SVector
+  SMatrix
+  a better WriterT class and newtype

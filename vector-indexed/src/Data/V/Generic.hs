@@ -85,6 +85,9 @@ buildDep iS f = unsafeIV $ Vector.create vM
         bintElim iB $ \ (jS :: SInt j) (jLti :: j < i) -> do
           MVector.write v (stripI iB) =<< f git jS jLti
       return v
+
+fromV :: (IVector v1 a, IVectorComplete v1 i a, IVector v2 a, IVectorComplete v2 i a) => v1 i a -> v2 i a
+fromV v = build (length v) $ (!) v
     
 -- Elimination
 _iiterOnL :: (IVector v a) => (BInt i -> a -> b -> b) -> v i a -> b -> b
@@ -109,6 +112,9 @@ _index v iS = stripIV v Vector.! stripI iS
 updateIndex :: (IVector v a) => BInt i -> a ->  v i a -> v i a
 updateIndex iB x v = unsafeIV $ stripIV v Vector.// [(stripI iB, x)]
 
+modifyIndex :: (IVector v a) => BInt i -> (a -> a) -> v i a -> v i a
+modifyIndex iB f v = updateIndex iB (f (v ! iB)) v
+
 -- Combination
 concat :: (IVector v a) => v i a -> v j a -> v (i+j) a
 concat v1 v2 = unsafeIV $ stripIV v1 Vector.++ stripIV v2
@@ -132,6 +138,9 @@ infixl 7 *%
 infixl 7 %*
 (%*) :: (IVector v a, CFunctor (v i), Compat (v i) a, Num a) => v i a -> a -> v i a
 (%*) = flip (*%)
+
+sum :: (Num a, IVector v a, IVectorComplete v i a) => v i a -> a
+sum = iterL (+) 0
 
 -- Printing
 _pretty :: (MonadPretty m, IVector v a, IVectorComplete v i a) => PrettyF a -> v i a -> m ()
