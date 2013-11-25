@@ -20,5 +20,8 @@ clean:
 interact:
 	ghci -isrc -XDataKinds -XScopedTypeVariables -XTypeOperators -interactive-print=Text.Pretty.pprintLn Interact.hs
 
+interact-no-local:
+	ghci -XDataKinds -XScopedTypeVariables -XTypeOperators -interactive-print=Text.Pretty.pprintLn Interact.hs
+
 reinstall-all:
 	make -C ../ reinstall

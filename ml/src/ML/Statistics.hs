@@ -9,3 +9,6 @@ genContVarM :: (ContGen d, MonadGen m) => d -> m Double
 genContVarM d = do
   g <- askGen
   liftIO $ genContVar d g
+
+sample :: (ContGen d, MonadGen m) => d -> m Double
+sample = genContVarM
