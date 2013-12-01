@@ -1,0 +1,4 @@
+type level operators : ^+^
+statically checked   : |+| 
+types                : SPeano
+operators            : zeroS

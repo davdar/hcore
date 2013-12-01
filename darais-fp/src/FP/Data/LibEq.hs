@@ -1,7 +1,9 @@
 module FP.Data.LibEq where
 
 import Prelude ()
+import Unsafe.Coerce
 
+infix 1 :=: 
 data (:=:) :: k -> k -> * where
   EqRefl :: a :=: a
 
@@ -10,7 +12,3 @@ unsafeLibEq = unsafeCoerce EqRefl
 
 withLibEq :: a :=: b -> ((a ~ b) => c) -> c
 withLibEq EqRefl f = f
-
-withUnsafeLibEqP :: Proxy a -> Proxy b -> ((a ~ b) => c) -> c
-withUnsafeLibEqP = undefined
-

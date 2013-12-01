@@ -1,6 +1,14 @@
 module FP.Classes.PartialOrder where
 
 import Prelude ()
+import FP.Data.Tuple
+import FP.PrePrelude
+import Data.Maybe
+import FP.Data.Function
+import Data.Set (Set)
+import qualified Data.Set as Set
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 -- minimal completion is pcompare or lte
 class PartialOrder t where
@@ -46,18 +54,6 @@ instance (PartialOrder a, PartialOrder b) => PartialOrder (a, b) where
       Just EQ -> pcompare b1 b2
       Just GT -> Just GT
       Nothing -> Nothing
-
-group3 :: (a,b,c) -> ((a,b),c)
-group3 (a,b,c) = ((a,b),c)
-
-ungroup3 :: ((a,b),c) -> (a,b,c)
-ungroup3 ((a,b),c) = (a,b,c)
-
-group4 :: (a,b,c,d) -> ((a,b),c,d)
-group4 (a,b,c,d) = ((a,b),c,d)
-
-ungroup4 :: ((a,b),c,d) -> (a,b,c,d)
-ungroup4 ((a,b),c,d) = (a,b,c,d)
 
 instance 
   (PartialOrder a, PartialOrder b, PartialOrder c) 

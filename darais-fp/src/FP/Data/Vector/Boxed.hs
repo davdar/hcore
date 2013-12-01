@@ -1,12 +1,42 @@
-module FP.Data.Vector.Boxed 
-  ( Vector
-  ) where
+module FP.Data.Vector.Boxed where -- ( Vector) where
 
-import Prelude ()
-import FP.Prelude
-import Data.Vector (Vector)
-import qualified Data.Vector as Vector
-
-instance CFunctor Vector where
-  Compat Vector = Universal
-  cmap = map
+-- import Control.Monad.ST
+-- import Prelude ()
+-- import FP.PrePrelude
+-- import FP.Classes.Sequence
+-- import FP.Classes.Functor
+-- import Data.Vector (Vector, MVector)
+-- import FP.Classes.Compat
+-- import FP.Data.Stream (Stream, stream)
+-- import qualified FP.Data.Stream as S
+-- import qualified Data.Vector as Vector
+-- import qualified Data.Vector.Mutable as Mutable
+-- import Control.Monad.Primitive
+-- 
+-- type instance Compat Vector = Universal
+-- instance CFunctor Vector where
+--   cmapM = mapM
+-- instance TFunctor Vector
+-- instance Sequence Vector where
+--   toStream :: (Compat Vector a) => Vector a -> Stream a
+--   toStream v = stream 0 step
+--     where
+--       l = length v
+--       step i | i == l = S.Done
+--              | otherwise = S.Yield (v ! i) (i+1)
+--   fromStream :: forall a. (Compat Vector a) => Int -> Stream a -> Vector a
+--   fromStream l s0 = Vector.create $ action s0
+--     where
+--       action :: forall s. Stream a -> ST s (MVector (PrimState (ST s)) a)
+--       action s = do
+--         v <- Mutable.new l
+--         loop v 0 s
+--         return v
+--       loop :: forall s. MVector (PrimState (ST s)) a -> Int -> Stream a -> ST s ()
+--       loop v i s = case S.takeStep s of
+--         S.Done -> return ()
+--         S.Yield a s' -> do
+--           Mutable.write v i a
+--           loop v (i+1) s'
+--   length = Vector.length
+--   (!) = (Vector.!)

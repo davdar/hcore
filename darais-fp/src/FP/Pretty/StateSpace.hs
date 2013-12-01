@@ -1,6 +1,15 @@
 module FP.Pretty.StateSpace where
 
 import Prelude ()
+import FP.PrePrelude
+import FP.Classes.PartialOrder
+import FP.Data.Lens
+import FP.Data.Function
+import FP.Util.ConsoleState
+import System.Console.ANSI
+import FP.Classes.Monoid
+import FP.Classes.Monad
+import Data.Text (Text)
 
 data Layout = Flat | Break
   deriving (Eq, Ord, Show, Enum)
@@ -32,7 +41,7 @@ instance PartialOrder Precedence where
     toAlg (Precedence n d b) = ((n,d),b)
 
 pbump :: Precedence -> Precedence
-pbump (Precedence n k b) = Precedence n k True
+pbump (Precedence n k _) = Precedence n k True
 
 data StyleOptions = StyleOptions
   { _styleL :: Style

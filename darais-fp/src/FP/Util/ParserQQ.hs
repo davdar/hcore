@@ -1,9 +1,13 @@
 module FP.Util.ParserQQ where
 
 import Prelude ()
+import FP.PrePrelude
+import FP.Classes.ToQQ
+import Language.Haskell.TH.Quote (QuasiQuoter(..))
+import qualified Language.Haskell.TH as TH
 
-parserQQ :: (ToQQ a) => (String -> Either String a) -> TH.QuasiQuoter
-parserQQ parser = TH.QuasiQuoter expQ patQ undefined undefined
+parserQQ :: (ToQQ a) => (String -> Either String a) -> QuasiQuoter
+parserQQ parser = QuasiQuoter expQ patQ undefined undefined
   where
     expQ input = do
       locMsg <- locationError

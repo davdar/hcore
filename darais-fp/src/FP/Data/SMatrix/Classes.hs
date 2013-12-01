@@ -2,6 +2,7 @@ module FP.Data.SMatrix.Classes where
 
 import Prelude ()
 import FP.Data.Nat
+import FP.Data.SInt
 
 class RolledMatrixS t where
   type UnrolledMatrixS t :: Nat -> * -> *

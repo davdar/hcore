@@ -1,6 +1,5 @@
 module FP.Data
   ( module FP.Data.BInt
-  , module FP.Data.Bool
   , module FP.Data.Compose
   , module FP.Data.Double
   , module FP.Data.Either
@@ -21,7 +20,6 @@ module FP.Data
   ) where
 
 import FP.Data.BInt
-import FP.Data.Bool
 import FP.Data.Compose
 import FP.Data.Double
 import FP.Data.Either
@@ -34,8 +32,8 @@ import FP.Data.Proxy
 import FP.Data.SInt
 import FP.Data.SList
 import FP.Data.SMatrix
-import FP.Data.SStream
-import FP.Data.Stream
+import FP.Data.SStream (SStreamT(..), SStream, sstream)
+import FP.Data.Stream (StreamT(..), Stream, stream)
 import FP.Data.String
 import FP.Data.SVector
 import FP.Data.Vector

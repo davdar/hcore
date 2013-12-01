@@ -1,13 +1,28 @@
-module FP.Data.SVector.Storable (SVectorStorable) where
+module FP.Data.SVector.Storable where -- ( SVectorStorable, svectorStorableT) where
 
-import Prelude ()
-import FP.Data.Nat
-import FP.Data.Vector.Storable
-import FP.Classes.Eq
-import FP.Classes.Ord
-
-newtype SVectorStorable (i::Nat) a = SVectorStorable { unSVectorStorable :: VectorStorable a }
-  deriving (Eq, Ord)
-
-svectorStorable :: Proxy (SVectorStorable i a)
-svectorStorable = proxy
+-- import FP.Classes.Compat
+-- import Prelude ()
+-- import FP.PrePrelude
+-- import Foreign.Storable
+-- import FP.Classes.Monad
+-- import FP.Data.Proxy
+-- import FP.Classes.Functor
+-- import FP.Data.Nat
+-- import FP.Data.Vector.Storable
+-- import FP.Classes.Static
+-- 
+-- newtype SVectorStorable (i::Nat) a = SVectorStorable { unSVectorStorable :: VectorStorable a }
+--   deriving (Eq, Ord)
+-- 
+-- type instance Compat (SVectorStorable i) = Storable
+-- 
+-- instance Static1 SVectorStorable where
+--   type Stripped1 SVectorStorable = VectorStorable
+--   stripS1 = unSVectorStorable
+--   unsafeS1 = SVectorStorable
+-- 
+-- instance CFunctor (SVectorStorable i) where
+--   cmapM f = liftM unsafeS1 . cmapM f . stripS1
+-- 
+-- svectorStorableT :: Proxy (SVectorStorable i a)
+-- svectorStorableT = proxy

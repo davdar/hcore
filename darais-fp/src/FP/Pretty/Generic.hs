@@ -1,6 +1,20 @@
 module FP.Pretty.Generic where
 
+import Data.Text (Text)
+import FP.Classes.Monad
+import FP.Classes.PartialOrder
+import FP.Classes.Sequence
+import FP.Data.Bool
+import Data.Char
+import FP.Classes.Functor
+import FP.Data.Lens
+import FP.Data.List
+import FP.PrePrelude
+import FP.Pretty.StateSpace
+import FP.Util.ConsoleState
 import Prelude ()
+import System.Console.ANSI
+import qualified Data.Text as T
 
 ----- "Primitives" -----
 
@@ -14,7 +28,7 @@ text :: (MonadPretty m) => Text -> m ()
 text s = do
   rawText s
   modifyView columnL $ (+) $ fromIntegral $ T.length s
-  modifyView ribbonL $ (+) $ fromIntegral $ countNonSpace s
+  modifyView ribbonL $ (+) $ countNonSpace $ T.unpack s
   m <- askView failureL
   when (m == Fail) $ do
     w <- askView layoutWidthL
@@ -240,12 +254,12 @@ infixOp d n b infixD leftD rightD = do
 hsep :: (MonadPretty m) => [m ()] -> m ()
 hsep ds = do
   buff <- getBuff
-  foldr (>>) (return ()) $ intersperse (text buff) ds
+  sequenceIntersperseM (text buff) ds
 
 vsep :: (MonadPretty m) => [m ()] -> m ()
 vsep ds = do
   buff <- getBuff
-  foldr (>>) (return ()) $ intersperse (tryFlat (text buff) hardLine) ds
+  sequenceIntersperseM (tryFlat (text buff) hardLine) ds
 
 parenthesize :: (MonadPretty m) => m () -> m ()
 parenthesize d = do

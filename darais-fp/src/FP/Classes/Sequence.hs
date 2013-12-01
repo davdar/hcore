@@ -1,22 +1,54 @@
 module FP.Classes.Sequence where
 
 import Prelude ()
+import FP.PrePrelude
+import FP.Data.Proxy
+import FP.Data.Function
+import FP.Classes.Monad
+import qualified FP.Data.Stream as S
+import FP.Data.Stream (StreamT(..), Stream)
+import FP.Classes.Compat
 
-class (CFunctor t) => Sequence t where
+class Sequence t where
   toStream :: (Compat t a) => t a -> Stream a
   fromStream :: (Compat t a) => Int -> Stream a -> t a
-  (!&) :: (Compat t a) => t a -> Int -> a
+  length :: (Compat t a) => t a -> Int
+  (!) :: (Compat t a) => t a -> Int -> a
 
-class 
-  ( Static1 t
-  , CFunctor t
-  , CFunctor (UnStatic1 t)
-  , Compat t ~ Compat (UnStatic1 t)
-  , Sequence (Static t)
-  ) => SSequence t where
-    toStreamS :: (Compat (t i) a) => t i a -> SStream i a
-    fromStreamS :: (Compat (t i) a) => SInt i -> SStream i a -> t i a
-    (!) :: (Compat t a) => t i a -> SInt i -> a
+toStreamM :: (Monad m, Sequence t, Compat t a) => t a -> StreamT m a
+toStreamM = S.liftStream . toStream
+
+fromStreamT :: (Sequence t, Compat t a) => Proxy (t a) -> Int -> Stream a -> t a
+fromStreamT = const fromStream
+
+fromStreamM :: (Monad m, Sequence t, Compat t a) => Int -> StreamT m a -> m (t a)
+fromStreamM i = liftM (fromStream i) . S.run
+
+fromStreamMT :: (Monad m, Sequence t, Compat t a) => Proxy (t a) -> Int -> StreamT m a -> m (t a)
+fromStreamMT = const fromStreamM
+
+iterL :: (Sequence t, Compat t a) => (a -> b -> b) -> b -> t a -> b
+iterL f i = S.iterL f i . toStream
+
+forIntersperseM :: (Monad m, Sequence t, Compat t a) => t a -> m () -> (a -> m ()) -> m ()
+forIntersperseM = S.exec ..: (S.forIntersperseM . toStreamM)
+
+sequenceM :: (Monad m, Sequence t, Compat t (m ())) => t (m ()) -> m ()
+sequenceM = S.exec . S.sequenceM . toStreamM
+
+sequenceIntersperseM :: (Monad m, Sequence t, Compat t (m ())) => m () -> t (m ()) -> m ()
+sequenceIntersperseM inter = S.exec . S.sequenceIntersperseM inter . toStreamM
+
+toStreamFromIndex :: (Monad m, Sequence t, Compat t a) => (a -> m b) -> t a -> StreamT m b
+toStreamFromIndex f t =
+  let l = length t
+  in StreamT 0 $ step l
+  where
+    step l i
+      | i == l = return $ S.Done
+      | otherwise = do
+          y <- f $ t ! i
+          return $ S.Yield y $ succ i
 
 -- iterL :: (Iterable t) => (Elem t -> b -> b) -> b -> t -> b
 -- iterL = flip . iterOnL

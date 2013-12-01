@@ -1,6 +1,7 @@
 module FP.Data.Ex where
 
 import Prelude ()
+import FP.PrePrelude
 import FP.Classes.Static
 import FP.Pretty
 
@@ -10,10 +11,10 @@ data Ex (p :: k -> *) where
 unEx :: Ex p -> (forall i. p i -> b) -> b
 unEx (Ex x) f = f x
 
-ex :: UnIndexed p -> Ex p
+ex :: (Static p) => Stripped p -> Ex p
 ex e = Ex $ unsafeS e
 
-stripEx :: (Static p) => Ex p -> UnIndexed p
+stripEx :: (Static p) => Ex p -> Stripped p
 stripEx e = unEx e stripS
 
 class PrettyEx p where

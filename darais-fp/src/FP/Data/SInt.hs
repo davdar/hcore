@@ -1,111 +1,82 @@
 module FP.Data.SInt
-  ( SInt, sint, sintEx
-  , ICompare(..), icompare
-  , plusIdentity, timesIdentityL, timesIdentityR
-  , bint, bintExtend, bintElim
+  ( SInt, sintT, sint
+  , CompareS(..), compareS
+  , plusIdentityL, plusIdentityR, timesIdentityL, timesIdentityR
   ) where
 
 import Prelude ()
+import FP.PrePrelude
+import FP.Data.LibEq
 import FP.Classes.Static
-import FP.Classes.NumS
-import FP.Pretty
+import FP.Classes.SNum
+import FP.Data.Nat
+import Foreign.Storable
+import FP.Data.Proxy
+import GHC.TypeLits
 
 newtype SInt (i::Nat) = SInt { unSInt :: Int }
   deriving (Eq, Ord, Storable)
 instance Static SInt where
-  type UnStatic SInt = Int
+  type Stripped SInt = Int
   stripS = unSInt
   unsafeS = SInt
-instance PeanoS SInt where
+instance SPeanoLike SInt where
   zeroS = _zero
   succS = _succ
-  peanoCaseS = _peanoCaseS
-instance AdditiveS SInt where
+  peanoCaseS = _peanoCase
+instance SAdditive SInt where
   (|+|) = _plus
-instance MultiplicativeS SInt where
+instance SMultiplicative SInt where
   (|*|) = _times
-instance Pretty (SInt i) where
-  pretty = _pretty
-instance Show (SInt i) where
-  show = show'
 
-sint :: Proxy (Sint i)
-sint = proxy
+sintT :: Proxy (SInt i)
+sintT = proxy
 
 -- Introduction
-mkSInt :: forall (i::Nat). (SingI i) => SInt i
-mkSInt = unsafeI $ fromIntegral $ fromSing (sing :: Sing i)
-
-sintEx :: Int -> Ex SInt
-sintEx = Ex . unsafeI
+sint :: forall (i::Nat). (SingI i) => SInt i
+sint = unsafeS $ fromIntegral $ fromSing (sing :: Sing i)
 
 -- Elimination
-_peanoCaseI :: SInt i -> PeanoCaseI SInt i
-_peanoCaseI (SInt i)
+_peanoCase :: forall i. SInt i -> SPeanoCase SInt i
+_peanoCase (SInt i)
   | i < 0 = error "SInt less than zero"
-  | i == 0  = unsafeCoerce CaseZeroI
-  | otherwise = unsafeCoerce $ CaseSuccI (unsafeI (i-1) :: SInt 0)
-
-_iterOnL :: (BInt i -> a -> a) -> SInt i -> a -> a
-_iterOnL f iS = case peanoCaseI iS of
-  CaseZeroI -> id
-  CaseSuccI iS' -> f (bint iS' ltSucc) .! _iterOnL (f . bump) iS'
-
-_iterOnR :: (BInt i -> a -> a) -> SInt i -> a -> a
-_iterOnR f iS = case peanoCaseI iS of
-  CaseZeroI -> id
-  CaseSuccI iS' -> _iterOnR (f . bump) iS' . f (bint iS' ltSucc)
+  | i == 0  = withLibEq (unsafeLibEq :: i :=: 0) ZeroS
+  | otherwise = withLibEq (unsafeLibEq :: i :=: (0+1)) $ SuccS (unsafeS (i-1) :: SInt 0)
 
 -- Combination
-_zeroI :: SInt 0
-_zeroI = unsafeI 0
+_zero :: SInt 0
+_zero = unsafeS 0
 
-_succI :: SInt i -> SInt (i+1)
-_succI = unsafeI . succ . stripI
+_succ :: SInt i -> SInt (i+1)
+_succ = unsafeS . succ . stripS
 
 _plus :: SInt i -> SInt j -> SInt (i+j)
-_plus x y = unsafeI $ stripI x + stripI y
+_plus x y = unsafeS $ stripS x + stripS y
 
 _times :: SInt i -> SInt j -> SInt (i*j)
-_times x y = unsafeI $ stripI x * stripI y
+_times x y = unsafeS $ stripS x * stripS y
 
-data ICompare i j where
-  ILt :: i < j -> ICompare i j
-  IEq :: (i ~ j) => ICompare i j
-  IGt :: j < i -> ICompare i j
+data CompareS i j where
+  LtS :: i < j -> CompareS i j
+  EqS :: (i ~ j) => CompareS i j
+  GtS :: j < i -> CompareS i j
 
-icompare :: forall i j. SInt i -> SInt j -> ICompare i j
-icompare iS jS = case compare (stripI iS) (stripI jS) of
-  LT -> ILt unsafeLtAxiom
-  EQ -> withEqRefl (unsafeEqRefl :: i :=: j) IEq
-  GT -> IGt unsafeLtAxiom
-
--- Printing
-_pretty :: (MonadPretty m) => SInt i -> m ()
-_pretty = pretty . stripI
+compareS :: forall i j. SInt i -> SInt j -> CompareS i j
+compareS iS jS = case compare (stripS iS) (stripS jS) of
+  LT -> LtS unsafeLtAxiom
+  EQ -> withLibEq (unsafeLibEq :: i :=: j) EqS
+  GT -> GtS unsafeLtAxiom
 
 -- Num Axioms
-plusIdentity :: i :=: (i + 0)
-plusIdentity = unsafeEqRefl
+plusIdentityL :: i :=: (0 + i)
+plusIdentityL = unsafeLibEq
+
+plusIdentityR :: i :=: (i + 0)
+plusIdentityR = unsafeLibEq
 
 timesIdentityL :: i :=: (1 * i)
-timesIdentityL = unsafeEqRefl
+timesIdentityL = unsafeLibEq
 
 timesIdentityR :: i :=: (i * 1)
-timesIdentityR = unsafeEqRefl
-
----------- BInt ----------
-
--- Introduction
-bint :: SInt i -> i < j -> BInt j
-bint iS _ = unsafeI $ stripI iS
-
--- TODO: flip arguments
-bintExtend :: BInt i -> i <= j -> BInt j
-bintExtend iB iLtej = bintElim iB $ \ kS kLti ->
-  bint kS $ ltTransLte kLti iLtej
-
--- Elimination
-bintElim :: BInt j -> (forall i. SInt i -> i < j -> b) -> b
-bintElim iB k = k (unsafeI $ stripI iB) unsafeLtAxiom
+timesIdentityR = unsafeLibEq
 

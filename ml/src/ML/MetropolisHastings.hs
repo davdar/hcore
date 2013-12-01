@@ -46,44 +46,27 @@ randomCentered center width = do
   r <- genContVarM $ uniformDistr 0 width
   let lo = center - r
       hi = lo + width
-  -- liftIO $ putStrLn $ printf "center: %s width: %s lo: %s hi: %s" (show center) (show width) (show lo) (show hi)
   return (lo, hi)
 
 sliceIter :: (MonadGen m) => Double -> (V j Double -> Double) -> BInt j -> V j Double -> m (V j Double)
 sliceIter width p jB xV = do
-  -- liftIO $ putStr "."
   y <- genContVarM $ uniformDistr 0 $ p xV
   (lo, hi) <- randomCentered (xV ! jB) width
   stepOutLeft y lo hi
   where
     stepOutLeft y lo hi = do
       let xV' = V.updateIndex xV jB lo
-      -- liftIO $ putStrLn $ printf "left: %s - %s" (show lo) (show hi)
-      -- liftIO $ putStrLn $ printf "old: %s" $ show xV
-      -- liftIO $ putStrLn $ printf "new: %s" $ show xV'
-      -- liftIO $ putStrLn $ printf "y: %s" $ show y
-      -- liftIO $ putStrLn $ printf "p new: %s" $ show $ p xV'
       if y < p xV'
         then stepOutLeft y (lo - width) hi
         else stepOutRight y lo hi
     stepOutRight y lo hi = do
       let xV' = V.updateIndex xV jB hi
-      -- liftIO $ putStrLn $ printf "right: %s - %s" (show lo) (show hi)
-      -- liftIO $ putStrLn $ printf "old: %s" $ show xV
-      -- liftIO $ putStrLn $ printf "new: %s" $ show xV'
-      -- liftIO $ putStrLn $ printf "y: %s" $ show y
-      -- liftIO $ putStrLn $ printf "p new: %s" $ show $ p xV'
       if y < p xV'
         then stepOutRight y lo (hi + width)
         else shrink y lo hi
     shrink y lo hi = do
       xj <- genContVarM $ uniformDistr lo hi
       let xV' = V.updateIndex xV jB xj
-      -- liftIO $ putStrLn $ printf "shrink: %s - %s" (show lo) (show hi)
-      -- liftIO $ putStrLn $ printf "old: %s" $ show xV
-      -- liftIO $ putStrLn $ printf "new: %s" $ show xV'
-      -- liftIO $ putStrLn $ printf "y: %s" $ show y
-      -- liftIO $ putStrLn $ printf "p new: %s" $ show $ p xV'
       if y <= p xV'
         then return xV'
         else if xj < (xV ! jB)

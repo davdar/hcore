@@ -1,8 +1,10 @@
 module FP.Data.String where
 
 import Prelude ()
-import Prelude (String)
+import Data.Char
+import FP.PrePrelude
 import FP.Classes.Functor
+import FP.Data.List ()
 
 slugify :: String -> String
 slugify = map slugChar

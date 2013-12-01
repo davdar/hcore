@@ -1,7 +1,4 @@
 module FP.Data.Bool where
 
-import Prelude ()
-
-cond :: (a -> Bool) -> c -> c -> a -> c
-cond f isT isF x = if f x then isT else isF
-
+cond :: (a -> Bool) -> b -> b -> a -> b
+cond c tb fb a = if c a then tb else fb

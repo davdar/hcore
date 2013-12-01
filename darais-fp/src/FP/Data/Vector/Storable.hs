@@ -1,5 +1,23 @@
 module FP.Data.Vector.Storable where
 
-import Data.Vector.Storable
-
-type VectorStorable = Vector
+-- import Prelude ()
+-- import FP.PrePrelude
+-- import FP.Classes.Sequence
+-- import FP.Classes.Compat
+-- import Foreign.Storable
+-- import Data.Vector.Storable (Vector)
+-- import qualified Data.Vector.Storable as Vector
+-- import FP.Classes.Functor
+-- 
+-- type VectorStorable = Vector
+-- 
+-- type instance Compat VectorStorable = Storable
+-- 
+-- instance CFunctor VectorStorable where
+--   cmapM = Vector.mapM
+-- 
+-- instance Sequence VectorStorable where
+--   toStream = undefined
+--   fromStream = undefined
+--   length = Vector.length
+--   (!) = (Vector.!)

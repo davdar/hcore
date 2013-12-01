@@ -1,6 +1,13 @@
 module FP.Classes.Lattice where
 
 import Prelude ()
+import FP.PrePrelude
+import Data.Set (Set)
+import Data.Map (Map)
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import FP.Data.Function
+import FP.Data.Tuple
 
 class Lattice a where
   lbot :: a

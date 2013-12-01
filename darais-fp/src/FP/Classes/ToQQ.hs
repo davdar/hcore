@@ -1,6 +1,13 @@
 module FP.Classes.ToQQ where
 
 import Prelude ()
+import FP.PrePrelude
+import FP.Classes.Functor
+import FP.Data.List ()
+import FP.Classes.Monad
+import Language.Haskell.TH (Q)
+import qualified Language.Haskell.TH as TH
+import GHC.Exts
 
 class ToQQ a where
   toQQE :: a -> Q TH.Exp

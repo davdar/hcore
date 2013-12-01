@@ -1,6 +1,23 @@
-module FP.Classes.Monad where
+module FP.Classes.Monad 
+  ( module FP.Classes.Monad
+  , module Control.Monad.Reader
+  , module Control.Monad.State
+  , module Control.Monad.Writer
+  , module Control.Monad.Identity
+  , module Control.Monad.RWS
+  , module Control.Monad.Maybe
+  , module Control.Monad
+  ) where
 
 import Prelude ()
+import FP.PrePrelude
+import Control.Monad hiding (sequence, mapM)
+import Control.Monad.State hiding (sequence, mapM)
+import Control.Monad.Reader hiding (sequence, mapM)
+import Control.Monad.Writer hiding (sequence, mapM)
+import Control.Monad.Identity hiding (sequence, mapM)
+import Control.Monad.RWS hiding (sequence, mapM)
+import Control.Monad.Maybe
 
 type family MEnv (m :: * -> *) :: *
 type family MOut (m :: * -> *) :: *

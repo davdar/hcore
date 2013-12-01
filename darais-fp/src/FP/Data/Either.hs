@@ -1,6 +1,7 @@
 module FP.Data.Either where
 
 import Prelude ()
+import FP.PrePrelude
 
 mapLeft :: (a -> c) -> Either a b -> Either c b
 mapLeft f (Left x) = Left $ f x
