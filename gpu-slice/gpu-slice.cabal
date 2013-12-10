@@ -1,0 +1,38 @@
+author:              David Darais
+build-type:          Simple
+cabal-version:       >=1.10
+license-file:        LICENSE
+license:             BSD3
+maintainer:          david.darais@gmail.com
+name:                gpu-slice
+version:             0.1.0.0
+
+library
+  build-depends:       accelerate              == 0.14.*
+                     , accelerate-cuda         == 0.14.*
+                     , accelerate-io           == 0.14.*
+                     , base                    == 4.6.*
+                     , bytestring              == 0.10.*
+                     , cereal                  == 0.4.*
+                     , mtl                     == 2.1.*
+                     , mwc-random              == 0.13.*
+                     , primitive               == 0.5.*
+                     , random                  == 1.0.*
+                     , repa                    == 3.2.*
+                     , statistics              == 0.10.*
+                     , vector                  == 0.10.*
+                     , vector-binary-instances == 0.2.*
+                     -- , deepseq >=1.3 && <1.4
+                     -- , math-functions >=0.1 && <0.2
+                     -- , process >=1.1 && <1.2
+  default-extensions:  FlexibleInstances
+                     , NoMonomorphismRestriction
+                     , RankNTypes
+                     , ScopedTypeVariables
+                     , TypeFamilies
+                     , TypeSynonymInstances
+                     , ViewPatterns
+  default-language:    Haskell2010
+  exposed-modules:     Model, Stats, Types, Util
+  ghc-options:         -Wall
+  hs-source-dirs:      src
