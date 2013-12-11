@@ -8,4 +8,4 @@ import System.Environment
 main :: IO ()
 main = do
   [read -> n] <- getArgs
-  lmainSerial n
+  lmainAcc n

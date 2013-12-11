@@ -1,5 +1,6 @@
 module Util where
 
+import Control.DeepSeq
 import Control.Monad
 import Data.IORef
 import System.IO
@@ -12,7 +13,7 @@ import qualified Data.Array.Repa as R
 
 debug :: IORef Bool
 {-# NOINLINE debug #-}
-debug = unsafePerformIO $ newIORef False
+debug = unsafePerformIO $ newIORef True
 
 log' :: String -> b -> b
 log' msg x = unsafePerformIO $ do
@@ -60,3 +61,6 @@ repaToVector = R.toUnboxed
 
 vectorToRepa :: (UV.Unbox a) => VectorU a -> RVectorU a
 vectorToRepa v = R.fromUnboxed (R.ix1 $ UV.length v) v
+
+instance (UV.Unbox a) => NFData (RVectorU a) where
+  rnf v = v `R.deepSeqArray` ()

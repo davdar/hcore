@@ -3,4 +3,4 @@ module Main where
 import Model
 
 main :: IO ()
-main = mainAcc
+main = return ()

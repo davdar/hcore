@@ -1,6 +1,11 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Main where
 
 import Model
+import System.Environment
 
 main :: IO ()
-main = mainPar
+main = do
+  [read -> n] <- getArgs
+  lmainPar n
