@@ -60,8 +60,6 @@ mh propose pdf x0 iters0 = liftM extract $ flip runStateT i0 $ BV.replicateM ite
       x' <- liftIO $ propose x
       let p' = pdf x'
           r = min 1 $ p' / p
-      --mtrace' "p =" p
-      --mtrace' "p'=" p'
       u <- liftIO $ randomRIO (0::Float, 1)
       let (x'',p'',s'') = if u < r
             then (x',p',succ successes)
@@ -85,8 +83,6 @@ lmh propose lpdf x0 iters0 = liftM extract $ flip runStateT i0 $ BV.replicateM i
       x' <- liftIO $ propose x
       let lp' = lpdf x'
           lr = min 0 $ lp' - lp
-      --mtrace' "lp =" lp
-      --mtrace' "lp'=" lp'
       u <- liftIO $ randomRIO (0::Float, 1)
       let (x'',p'',s'') = if log u < lr
             then (x',lp',succ successes)

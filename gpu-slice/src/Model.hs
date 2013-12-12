@@ -148,15 +148,12 @@ llhdPar xs (ModelRepa mean1 var1 mean2 var2 mix) =
     log (lhd mean1 var1 i * mix + lhd mean2 var2 i * (1 - mix))
 
 lhdAcc :: Acc (AMatrix Float) -> Acc ModelAcc -> Acc (AScalar Float)
-lhdAcc xs = p A.>-> A.product
-  where
-    p :: Acc ModelAcc -> Acc (AVector Float)
-    p (A.unlift -> (mean1 , var1 , mean2 , var2 , mix)) =
-      let lhd mean var (A.unlift . A.unindex2 -> (i,j)) = 
-            lhdNormalAcc (mean A.! A.index1 j) var (xs A.! A.index2 i j)
-          m1 = A.map (* A.the mix) $ A.fold (*) 1 $ A.generate (A.shape xs) $ lhd mean1 $ A.the var1
-          m2 = A.map (* (1 - A.the mix)) $ A.fold (*) 1 $ A.generate (A.shape xs) $ lhd mean2 $ A.the var2
-      in A.zipWith (+) m1 m2
+lhdAcc xs (A.unlift -> (mean1 , var1 , mean2 , var2 , mix)) = 
+  let lhd mean var (A.unlift . A.unindex2 -> (i,j)) = 
+        lhdNormalAcc (mean A.! A.index1 j) var (xs A.! A.index2 i j)
+      m1 = A.map (* A.the mix) $ A.fold (*) 1 $ A.generate (A.shape xs) $ lhd mean1 $ A.the var1
+      m2 = A.map (* (1 - A.the mix)) $ A.fold (*) 1 $ A.generate (A.shape xs) $ lhd mean2 $ A.the var2
+  in A.product $ A.zipWith (+) m1 m2
 
 llhdAcc :: Acc (AMatrix Float) -> Acc ModelAcc -> Acc (AScalar Float)
 llhdAcc xs (A.unlift -> (mean1, var1, mean2, var2, mix)) =
@@ -165,6 +162,54 @@ llhdAcc xs (A.unlift -> (mean1, var1, mean2, var2, mix)) =
       m1 = A.map (* A.the mix) $ A.fold (*) 1 $ A.generate (A.shape xs) $ lhd mean1 $ A.the var1
       m2 = A.map (* (1 - A.the mix)) $ A.fold (*) 1 $ A.generate (A.shape xs) $ lhd mean2 $ A.the var2
   in A.sum $ A.zipWith (\ x1 x2 -> log $ x1 + x2) m1 m2
+
+llhdAcc' :: Acc (AMatrix Float) -> Acc ModelAcc -> Acc (AScalar Float)
+llhdAcc' xs (A.unlift -> (mean1, var1, mean2, var2, mix)) =
+  let lhd mean var (A.unlift . A.unindex2 -> (i,j)) = 
+        lhdNormalAcc (mean A.! A.index1 j) var (xs A.! A.index2 i j)
+      m1 = A.map (* A.the mix) $ betterFold (*) 1 $ A.generate (A.shape xs) $ \ ij -> lhd mean1 (A.the var1) ij
+      m2 = A.map (* (1 - A.the mix)) $ betterFold (*) 1 $ A.generate (A.shape xs) $ \ ij -> lhd mean2 (A.the var2) ij
+  in A.sum $ A.zipWith (\ x1 x2 -> log $ x1 + x2) m1 m2
+  where
+    betterFold f x0 xs = 
+      let (n::Exp Int,_::Exp Int) = A.unlift $ A.unindex2 $ A.shape xs
+      in A.generate (A.index1 n) $ \ i -> A.sfoldl f x0 i xs
+
+llhdAcc'' :: Acc (AMatrix Float) -> Acc ModelAcc -> Acc (AScalar Float)
+llhdAcc'' xs (A.unlift -> (mean1, var1, mean2, var2, mix)) =
+  let (n::Exp Int,_::Exp Int) = A.unlift $ A.unindex2 $ A.shape xs
+      mean1R :: Acc (AMatrix Float)
+      mean1R = A.replicate (A.lift (A.Z A.:. n A.:. A.All)) mean1
+      mean2R :: Acc (AMatrix Float)
+      mean2R = A.replicate (A.lift (A.Z A.:. n A.:. A.All)) mean2
+      m1 :: Acc (AMatrix Float)
+      m1 = A.zipWith (combine $ A.the var1) xs mean1R
+      m2 :: Acc (AMatrix Float)
+      m2 = A.zipWith (combine $ A.the var2) xs mean2R
+      m' = A.generate (A.index1 n) $ \ i -> log $
+        A.the mix * A.sfoldl (*) 1 i m1
+        +
+        (1 - A.the mix) * A.sfoldl (*) 1 i m2
+  in
+  A.sum m'
+  where
+    combine var x u = lhdNormalAcc u var x
+
+llhdAccX :: Acc (AMatrix Float) -> Acc ModelAcc -> Acc (AScalar Float)
+llhdAccX xs (A.unlift -> (mean1, var1, mean2, var2, mix)) =
+  let lhd mean var (A.unlift . A.unindex2 -> (i,j)) = 
+        lhdNormalAcc (mean A.! A.index1 j) var (xs A.! A.index2 i j)
+      (n::Exp Int,_::Exp Int) = A.unlift $ A.unindex2 $ A.shape xs
+      m1 :: Acc (AMatrix Float) 
+      m1 = A.generate (A.shape xs) $ lhd mean1 $ A.the var1
+      m2 :: Acc (AMatrix Float)
+      m2 = A.generate (A.shape xs) $ lhd mean2 $ A.the var2
+      m' = A.generate (A.index1 n) $ \ i -> log $
+        A.the mix * A.sfoldl (*) 1 i m1
+        +
+        (1 - A.the mix) * A.sfoldl (*) 1 i m2
+  in
+  A.sum m'
 
 llhdAcc1 :: Acc (AMatrix Float) -> Acc ModelAcc -> Acc (AScalar Float)
 llhdAcc1 xs (A.unlift -> (mean1, var1, mean2, var2, mix)) = (p1 A.>-> p2 A.>-> p3 A.>-> A.sum) (A.unit 1)
@@ -216,6 +261,13 @@ llhdAcc3 xs = p A.>-> A.sum
     sfoldf :: Exp Float -> Exp Float -> Exp (Float, Float) -> Exp Float
     sfoldf var n (A.unlift -> (x, u)) = n * lhdNormalAcc u var x
 
+llhdAccStupid :: Acc (AMatrix Float) -> Acc ModelAcc -> Acc (AScalar Float)
+llhdAccStupid xs _ {-(A.unlift -> (mean1, var1, mean2, var2, mix))-} = A.unit (5::Exp Float)
+
+llhdAccStupid1 :: Acc (AMatrix Float) -> Acc ModelAcc -> Acc (AScalar Float)
+llhdAccStupid1 xs _ {-(A.unlift -> (mean1, var1, mean2, var2, mix))-} =
+  A.product $ A.fold (+) 0 xs
+
 ------------------------------------------------------------
 --------------- Full (joint) Model -------------------------
 ------------------------------------------------------------
@@ -264,6 +316,27 @@ ljointAcc xs = makeLJoint llhd
     xsA = A.use $ A.fromRepa $ R.copyS xs
     step = A.run1 (llhdAcc xsA)
 
+ljointAcc' :: RMatrixU Float -> ModelRepa -> Float
+ljointAcc' xs = makeLJoint llhd
+  where
+    llhd = accToScalar . step . modelRepaToAcc
+    xsA = A.use $ A.fromRepa $ R.copyS xs
+    step = A.run1 (llhdAcc' xsA)
+
+ljointAcc'' :: RMatrixU Float -> ModelRepa -> Float
+ljointAcc'' xs = makeLJoint llhd
+  where
+    llhd = accToScalar . step . modelRepaToAcc
+    xsA = A.use $ A.fromRepa $ R.copyS xs
+    step = A.run1 (llhdAcc'' xsA)
+
+ljointAccX :: RMatrixU Float -> ModelRepa -> Float
+ljointAccX xs = makeLJoint llhd
+  where
+    llhd = accToScalar . step . modelRepaToAcc
+    xsA = A.use $ A.fromRepa $ R.copyS xs
+    step = A.run1 (llhdAccX xsA)
+
 ljointAcc1 :: RMatrixU Float -> ModelRepa -> Float
 ljointAcc1 xs = makeLJoint llhd
   where
@@ -277,6 +350,13 @@ ljointAcc2 xs = makeLJoint llhd
     llhd = accToScalar . step . modelRepaToAcc
     xsA = A.use $ A.fromRepa $ R.copyS xs
     step = A.run1 (llhdAcc2 xsA)
+
+ljointAccStupid :: RMatrixU Float -> ModelRepa -> Float
+ljointAccStupid xs = makeLJoint llhd
+  where
+    llhd = accToScalar . step . modelRepaToAcc
+    xsA = A.use $ A.fromRepa $ R.copyS xs
+    step = A.run1 (llhdAccStupid1 xsA)
 
 ------------------------------------------------------------
 --------------- Full (joint) Model -------------------------
@@ -416,3 +496,22 @@ trueModelLlhd :: IO Float
 trueModelLlhd = do
   xs <- readData
   return $ llhdSerial xs model1
+
+fS :: RMatrixU Float -> Float -> Float
+fS xs y = R.foldAllS (*) 1 $ R.foldS (+) y xs
+
+fP :: RMatrixU Float -> Float -> Float
+fP xs y = runIdentity $ do
+  x <- R.foldP (+) y xs
+  return $ R.foldAllS (*) 1 x
+
+fA :: RMatrixU Float -> Float -> Float
+fA xs = accToScalar . step . scalarToAcc
+  where
+    xsA = A.use $ A.fromRepa $ R.copyS xs
+    comp :: Acc (AScalar Float) -> Acc (AScalar Float)
+    comp y = 
+      let (n::Exp Int,_::Exp Int) = A.unlift $ A.unindex2 $ A.shape xsA
+      in A.product $ A.generate (A.index1 n) $ \ i -> A.sfoldl (+) (A.the y) i xsA 
+      -- A.product $ A.fold (+) (A.the y) xsA
+    step = A.run1 comp

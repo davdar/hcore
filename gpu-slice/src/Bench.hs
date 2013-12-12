@@ -27,10 +27,20 @@ main = do
             lsampleWith (ljointSerial xs) mhIters
         , bench "parallel" $ nfIO $
             lsampleWith (ljointPar xs) mhIters
-        , bench "gpu" $ nfIO $
-            lsampleWith (ljointAcc xs) mhIters
+        -- , bench "gpu-stupid" $ nfIO $
+        --     lsampleWith (ljointAcc xs) mhIters
+        , bench "gpu-hopeful" $ nfIO $
+            lsampleWith (ljointAcc' xs) mhIters
         -- , bench "gpu1" $ nfIO $
         --     lsampleWith (ljointAcc1 xs) mhIters
         -- , bench "gpu2" $ nfIO $
         --     lsampleWith (ljointAcc2 xs) mhIters
         ]
+    -- benchDim d = do
+    --   xs <- synthData (2 ^ d)
+    --   return $ bgroup ("N=" ++ show (2 ^ d :: Int))
+    --     [ bench "seq" $ nf (fS xs) 0
+    --     , bench "par" $ nf (fP xs) 0
+    --     , bench "acc" $ nf (fA xs) 0
+    --     ]
+
