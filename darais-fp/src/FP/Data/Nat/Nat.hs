@@ -1,8 +1,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module FP.Data.Nat.Nat 
-  ( module FP.Data.Nat.Nat
-  , module GHC.TypeLits
+  ( module GHC.TypeLits
   ) where
 
 import GHC.TypeLits (Nat, type (+), type (*))

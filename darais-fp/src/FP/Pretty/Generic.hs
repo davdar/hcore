@@ -71,11 +71,7 @@ nest :: (MonadPretty m) => Int -> m a -> m a
 nest i = localViewMod nestingL $ (+) i
 
 group :: (MonadPretty m) => m a -> m a
-group aM = do
-  l <- askView layoutL
-  case l of
-    Flat -> aM
-    Break -> mplus (flatFail aM) aM
+group aM = tryFlat aM $ mplus (flatFail aM) aM
 
 align :: (MonadPretty m) => m a -> m a
 align aM = do

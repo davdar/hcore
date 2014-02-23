@@ -2,7 +2,6 @@ module FP.Pretty.Concrete where
 
 import Prelude ()
 import FP.PrePrelude
-import Data.Maybe
 import FP.Data.Lens
 import FP.Classes.Monad
 import FP.Pretty.StateSpace

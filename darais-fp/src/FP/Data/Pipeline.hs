@@ -1,12 +1,8 @@
 module FP.Data.Pipeline where
 
 import Prelude ()
-import qualified Data.List as List
-import FP.Data.Proxy
 import FP.PrePrelude
-import FP.Data.LibEq
 import FP.Data.Peano
-import FP.Classes.SNum
 
 -- class GSequence shape t where
 --   toStream :: (Compat t a) => t a -> GStream shape a
@@ -86,7 +82,7 @@ compileE (LitE v) = Const v
 compileE (VarE x) = x
 compileE (PlusE e1 e2) = Plus :.: (compileE e1 :||: compileE e2) :.: Dup
 compileE (PairE e1 e2) = compileE e1 :||: compileE e2 :.: Dup
-compileE (AppE abs e) = compileA abs $ compileE e
+compileE (AppE e1 e2) = compileA e1 $ compileE e2
 
 -- data Pipeline (s1::Shape) a (shape2::Shape) b where
 --   Id :: Pipeline s a s a

@@ -5,6 +5,7 @@ import FP.PrePrelude
 import FP.Data.Stream
 import FP.Classes.Compat
 
+-- This should really be ND
 class Sequence2D t where
   toRowStreams :: (Compat t a) => t a -> Stream (Stream a)
   toColStreams :: (Compat t a) => t a -> Stream (Stream a)

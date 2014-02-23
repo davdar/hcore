@@ -9,7 +9,6 @@ import FP.PrePrelude
 import Data.Lens.Common
 import Data.Lens.Template
 import FP.Classes.Monad
-import Control.Arrow
 
 class HasLens a b where
   view :: Lens a b

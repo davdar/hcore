@@ -3,7 +3,6 @@ module FP.Classes.PartialOrder where
 import Prelude ()
 import FP.Data.Tuple
 import FP.PrePrelude
-import Data.Maybe
 import FP.Data.Function
 import Data.Set (Set)
 import qualified Data.Set as Set

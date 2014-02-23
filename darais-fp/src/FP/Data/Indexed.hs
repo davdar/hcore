@@ -5,8 +5,8 @@ import FP.Classes.Static
 
 newtype Indexed t (i::k) = Indexed { unIndexed :: t }
 
-instance Static (Indexed t :: k -> *) where
-  type Stripped (Indexed t) = t  
+instance Static (Indexed t::k -> *) where
+  type Stripped (Indexed t::k -> *) = t  
   stripS = unIndexed
   unsafeS = Indexed
 

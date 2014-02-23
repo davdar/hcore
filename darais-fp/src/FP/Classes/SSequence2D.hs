@@ -1,9 +1,8 @@
 module FP.Classes.SSequence2D where
 
 import Prelude ()
-import FP.PrePrelude
 import FP.Data.BInt
-import FP.Data.SStream (SStreamT(..), SStream)
+import FP.Data.SStream (SStream)
 import FP.Data.SInt
 import FP.Classes.Compat
 

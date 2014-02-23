@@ -3,7 +3,6 @@
 module FP.Data.Peano where
 
 import FP.Classes.SNum
-import FP.Data.LibEq
 import FP.Data.Proxy
 
 data Peano = Z | S Peano

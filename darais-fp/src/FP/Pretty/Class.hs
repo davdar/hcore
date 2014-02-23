@@ -116,7 +116,6 @@ type PrettyF a = forall m. (MonadPretty m) => a -> m ()
 show' :: (Pretty a) => a -> String
 show' = showPretty . pretty
 
-
 pprintWith :: (Pretty a) => PrettyEnv -> a -> IO ()
 pprintWith e x = do
   c <- liftM read $ readProcess "tput" ["cols"] ""

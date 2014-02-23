@@ -1,0 +1,100 @@
+author:               David Darais
+build-type:           Simple
+cabal-version:        >=1.10
+category:             Data
+license-file:         LICENSE
+license:              BSD3
+maintainer:           david.darais@gmail.com
+name:                 darais-fp
+synopsis:             a bunch of useful functional programming types and classes
+version:              0.1.0.0
+
+library
+  build-depends:        base               == 4.6.*
+                      , data-lens          == 2.10.*
+                      , data-lens-template == 2.1.*
+                      , template-haskell   == 2.8.*
+                      , containers         == 0.5.*
+                      , mtl                == 2.1.*
+                      , ansi-terminal      == 0.6.*
+                      , text               == 1.1.*
+                      , process            == 1.1.*
+                      , MaybeT             == 0.1.*
+                      , primitive          == 0.5.*
+                      , either             == 4.1.*
+  default-extensions:   ConstraintKinds
+                      , DataKinds
+                      , ExistentialQuantification
+                      , FlexibleContexts
+                      , FlexibleInstances
+                      , FunctionalDependencies
+                      , GADTs
+                      , GeneralizedNewtypeDeriving
+                      , InstanceSigs
+                      , KindSignatures
+                      , MagicHash
+                      , MultiParamTypeClasses
+                      , OverloadedStrings
+                      , PolyKinds
+                      , RankNTypes
+                      , ScopedTypeVariables
+                      , TupleSections
+                      , TypeFamilies
+                      , TypeOperators
+                      , TemplateHaskell
+  default-language:     Haskell2010
+  exposed-modules:      FP
+                      , FP.Pretty
+  other-modules:        FP.Classes
+                      , FP.Classes.Compat
+                      , FP.Classes.Functor
+                      , FP.Classes.Lattice
+                      , FP.Classes.Monad
+                      , FP.Classes.Monoid
+                      , FP.Classes.PartialOrder
+                      , FP.Classes.QQ
+                      , FP.Classes.Sequence
+                      , FP.Classes.Sequence2D
+                      , FP.Classes.SNum
+                      , FP.Classes.SSequence
+                      , FP.Classes.SSequence2D
+                      , FP.Classes.Static
+                      , FP.Classes.ToQQ
+                      , FP.Data
+                      , FP.Data.Nat
+                      , FP.Data.Nat.Lte
+                      , FP.Data.Nat.Nat
+                      , FP.Data
+                      , FP.Data.BInt
+                      , FP.Data.Bool
+                      , FP.Data.Compose
+                      , FP.Data.Double
+                      , FP.Data.Either
+                      , FP.Data.Ex
+                      , FP.Data.Function
+                      , FP.Data.Indexed
+                      , FP.Data.Lens
+                      , FP.Data.LibEq
+                      , FP.Data.List
+                      , FP.Data.Nat
+                      , FP.Data.Peano
+                      , FP.Data.Pipeline
+                      , FP.Data.Proxy
+                      , FP.Data.SInt
+                      , FP.Data.SList
+                      , FP.Data.SStream
+                      , FP.Data.Stream
+                      , FP.Data.String
+                      , FP.Data.Tuple
+                      , FP.PrePrelude
+                      , FP.Pretty.Class
+                      , FP.Pretty.Concrete
+                      , FP.Pretty.Generic
+                      , FP.Pretty.StateSpace
+                      , FP.Util
+                      , FP.Util.ConsoleState
+                      , FP.Util.Error
+                      , FP.Util.ParserQQ
+  ghc-options:          -Wall -fno-warn-orphans
+  hs-source-dirs:       src
+  other-extensions:     UndecidableInstances

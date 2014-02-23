@@ -6,7 +6,6 @@ import System.Console.ANSI
 import FP.Data.Lens
 import FP.Classes.Monoid
 import FP.Classes.Monad
-import Data.Maybe
 
 data ConsoleState = ConsoleState
   { _intensityML :: Maybe ConsoleIntensity
