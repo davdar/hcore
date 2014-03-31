@@ -3,6 +3,8 @@ module FP.Pretty.Class
   , MonadPretty
   ) where
 
+import FP.Data.DumbLattice
+import FP.Data.Proxy
 import System.IO.Unsafe
 import System.Process
 import FP.Pretty.Concrete
@@ -24,16 +26,20 @@ import FP.Pretty.Generic
 import qualified Data.Text.IO as T
 
 class Pretty a where
+  precLattice :: Proxy a -> DumbLattice
+  precLattice Proxy = Map.empty
   pretty :: (MonadPretty m) => a -> m ()
   prettyDropIndent :: (MonadPretty m) => a -> m ()
   prettyDropIndent = dropIndent . pretty
   prettyList :: (MonadPretty m) => [a] -> m ()
   prettyList = 
-    encloseSep "[" "]" "," 
+    atLevel TopLevel
+    . encloseSep "[" "]" "," 
     . map pretty
   prettyDropIndentList :: (MonadPretty m) => [a] -> m ()
   prettyDropIndentList =
-    encloseSepDropIndent "[" "]" ","
+    atLevel TopLevel
+    . encloseSepDropIndent "[" "]" ","
     . map pretty
 
 instance Pretty Bool where
@@ -58,38 +64,80 @@ instance Pretty Text where
 instance Pretty () where
   pretty () = punctuation $ text "()"
 instance (Pretty a, Pretty b) => Pretty (a,b) where
-  pretty (a,b) = encloseSep "(" ")" "," 
-    [pretty a, pretty b]
+  precLattice Proxy =
+    Map.unionsWith Set.union 
+      [ precLattice (proxy :: Proxy a)
+      , precLattice (proxy :: Proxy b) 
+      ]
+  pretty (a,b) = 
+    atLevel TopLevel
+    $ encloseSep "(" ")" "," 
+    $ [pretty a, pretty b]
 instance (Pretty a, Pretty b, Pretty c) => Pretty (a,b,c) where
-  pretty (a,b,c) = encloseSep "(" ")" "," 
-    [pretty a, pretty b, pretty c]
+  precLattice Proxy =
+    Map.unionsWith Set.union 
+      [ precLattice (proxy :: Proxy a)
+      , precLattice (proxy :: Proxy b) 
+      , precLattice (proxy :: Proxy c) 
+      ]
+  pretty (a,b,c) = 
+    atLevel TopLevel
+    $ encloseSep "(" ")" ","
+    $ [pretty a, pretty b, pretty c]
 instance (Pretty a, Pretty b, Pretty c, Pretty d) => Pretty (a,b,c,d) where
-  pretty (a,b,c,d) = encloseSep "(" ")" ","
-    [pretty a, pretty b, pretty c, pretty d]
+  precLattice Proxy =
+    Map.unionsWith Set.union 
+      [ precLattice (proxy :: Proxy a)
+      , precLattice (proxy :: Proxy b) 
+      , precLattice (proxy :: Proxy c) 
+      , precLattice (proxy :: Proxy d)
+      ]
+  pretty (a,b,c,d) = 
+    atLevel TopLevel
+    $ encloseSep "(" ")" ","
+    $ [pretty a, pretty b, pretty c, pretty d]
 
 instance (Pretty a) => Pretty [a] where
+  precLattice Proxy = precLattice (proxy :: Proxy a)
   pretty = prettyList
   prettyDropIndent = prettyDropIndentList
 
 instance (Pretty a) => Pretty (Set a) where
+  precLattice Proxy = precLattice (proxy :: Proxy a)
   pretty = 
-    encloseSep "{" "}" "," 
+    atLevel TopLevel
+    . encloseSep "{" "}" "," 
     . map pretty
     . Set.toList
   prettyDropIndent =
-    encloseSepDropIndent "{" "}" ","
+    atLevel TopLevel
+    . encloseSepDropIndent "{" "}" ","
     . map pretty
     . Set.toList
 
 instance (Pretty k, Pretty v) => Pretty (Map k v) where
+  precLattice Proxy = 
+    Map.unionsWith Set.union
+      [ precLattice (proxy :: Proxy k)
+      , precLattice (proxy :: Proxy v)
+      ]
   pretty = 
-    encloseSep "{" "}" "," 
+    atLevel TopLevel
+    . encloseSep "{" "}" "," 
     . map prettyMapping
     . Map.toList
   prettyDropIndent =
-    encloseSepDropIndent "{" "}" ","
+    atLevel TopLevel
+    . encloseSepDropIndent "{" "}" ","
     . map prettyMapping
     . Map.toList
+
+prettyMapping :: (MonadPretty m, Pretty k, Pretty v) => (k,v) -> m ()
+prettyMapping (k,v) = group $ hsep
+  [ pretty k
+  , punctuation $ text "=>"
+  , prettyDropIndent v
+  ]
 
 instance Pretty (SInt i) where
   pretty = pretty . stripS
@@ -101,13 +149,6 @@ instance Pretty (BInt i) where
 instance Show (BInt i) where
   show = show'
 
-prettyMapping :: (MonadPretty m, Pretty k, Pretty v) => (k,v) -> m ()
-prettyMapping (k,v) = group $ hsep
-  [ pretty k
-  , punctuation $ text "=>"
-  , prettyDropIndent v
-  ]
-
 prettyFromShow :: (MonadPretty m, Show a) => a -> m ()
 prettyFromShow = string . show
 
@@ -116,19 +157,18 @@ type PrettyF a = forall m. (MonadPretty m) => a -> m ()
 show' :: (Pretty a) => a -> String
 show' = showPretty . pretty
 
-pprintWith :: (Pretty a) => PrettyEnv -> a -> IO ()
-pprintWith e x = do
+pprint :: forall a. (Pretty a) => a -> IO ()
+pprint x = do
   c <- liftM read $ readProcess "tput" ["cols"] ""
-  T.putStr $ execCPretty (setL layoutWidthL c e) $ pretty x
-
-pprint :: (Pretty a) => a -> IO ()
-pprint = pprintWith defaultPrettyEnv
-
-pprintLnWith :: (Pretty a) => PrettyEnv -> a -> IO ()
-pprintLnWith e x = pprintWith e x >> putStrLn ""
+  T.putStr 
+    $ execCPretty 
+    $ localViewSet layoutWidthL c 
+    $ withLattice (precLattice (proxy :: Proxy a)) 
+    $ topLevel 
+    $ pretty x
 
 pprintLn :: (Pretty a) => a -> IO ()
-pprintLn = pprintLnWith defaultPrettyEnv
+pprintLn x = pprint x >> putStrLn ""
 
 trace' :: (Pretty a) => String -> a -> b -> b
 trace' ann t x = unsafePerformIO $ do

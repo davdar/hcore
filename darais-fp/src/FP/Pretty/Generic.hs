@@ -2,7 +2,7 @@ module FP.Pretty.Generic where
 
 import Data.Text (Text)
 import FP.Classes.Monad
-import FP.Classes.PartialOrder
+import FP.Data.DumbLattice
 import FP.Classes.Sequence
 import FP.Data.Bool
 import Data.Char
@@ -32,13 +32,13 @@ text s = do
   m <- askView failureL
   when (m == Fail) $ do
     w <- askView layoutWidthL
-    rr <- askView ribbonRatioL
+    rw <- askView ribbonWidthL
     c <- getView columnL
     r <- getView ribbonL
     when (c > w) mzero
-    when (fromIntegral r > fromIntegral w * rr) mzero
+    when (r > rw) mzero
   where
-    countNonSpace = iterL (cond isSpace id succ) 0
+    countNonSpace = siter (cond isSpace id succ) 0
 
 string :: (MonadPretty m) => String -> m ()
 string = text . T.pack
@@ -96,9 +96,6 @@ console = localViewSet doConsoleL True
 noConsole :: (MonadPretty m) => m a -> m a
 noConsole = localViewSet doConsoleL False
 
-closedPrecedence :: Int -> (Precedence,Precedence)
-closedPrecedence i = (Precedence i NoD False,Precedence i NoD False)
-
 getBuff :: (MonadPretty m) => m Text
 getBuff = do
   b <- askView $ bufferingL . styleOptionsL
@@ -111,7 +108,8 @@ getBuff = do
 dropIndent :: (MonadPretty m) => m () -> m ()
 dropIndent d = do
   i <- askView $ indentWidthL . styleOptionsL
-  tryFlat (return ()) $ do
+  buff <- getBuff
+  tryFlat (text buff) $ do
     hardLine
     space i
   align d
@@ -141,7 +139,7 @@ encloseSepPre lbrac rbrac sep snug ds =
               if snug then text buff else tryFlat (text buff) hardLine
               punctuation $ text rbrac
           ]
-    group . sequence_ . f $ map (localViewSet precedenceL (closedPrecedence 0)  . align) ds
+    group . sequence_ . f $ map align ds
 
 encloseSepPost :: (MonadPretty m) => Text -> Text -> Text -> [m ()] -> m ()
 encloseSepPost lbrac rbrac sep ds =
@@ -168,7 +166,7 @@ encloseSepPost lbrac rbrac sep ds =
               text buff
               punctuation $ text rbrac
           ]
-    group . sequence_ . f $ map (localViewSet precedenceL (closedPrecedence 0) . align) ds
+    group . sequence_ . f $ map align ds
 
 encloseSepIndent :: (MonadPretty m) => Text -> Text -> Text -> [m ()] -> m ()
 encloseSepIndent lbrac rbrac sep ds = do
@@ -192,7 +190,7 @@ encloseSepIndent lbrac rbrac sep ds = do
             tryFlat (text buff) hardLine
             punctuation $ text rbrac
         ]
-  group . sequence_ . f $ map (localViewSet precedenceL (closedPrecedence 0) . align) ds
+  group $ sequence_ $ f $ map align ds
 
 encloseSep :: (MonadPretty m) 
            => Text -> Text -> Text -> [m ()] -> m ()
@@ -215,56 +213,18 @@ encloseSepDropIndent lbrac rbrac sep ds = do
     PostStyle -> dropIndent $ encloseSepPost lbrac rbrac sep ds
     IndentStyle -> encloseSepIndent lbrac rbrac sep ds
 
-infixOp :: (MonadPretty m) 
-        => Direction -> Int -> Buffering -> m () -> m () -> m () -> m ()
-infixOp d n b infixD leftD rightD = do
-  s <- askView $ styleL . styleOptionsL
-  let buff = case b of
-        Buffer -> " "
-        NoBuffer -> mempty
-  (pl,pr) <- askView precedenceL
-  let q = Precedence n d False
-      ql = if d == LeftD then q else pbump q
-      qr = if d == RightD then q else pbump q
-      enclose = if lte pl q && lte pr q
-        then id
-        else group . parenthesize
-  enclose $ do
-    (pl',pr') <- askView precedenceL
-    localViewSet precedenceL (pl',ql) leftD
-    let preSep = do
-          tryFlat (text buff) hardLine
-          infixD
-          text buff
-        postSep = do
-          text buff
-          infixD
-          tryFlat (text buff) hardLine
-    case s of
-      PreAlignStyle -> preSep
-      PreSnugStyle -> preSep
-      PostStyle -> postSep
-      IndentStyle -> postSep
-    localViewSet precedenceL (qr,pr') rightD
-
 hsep :: (MonadPretty m) => [m ()] -> m ()
 hsep ds = do
   buff <- getBuff
-  sequenceIntersperseM (text buff) ds
+  sintersperseExecute (text buff) ds
 
 vsep :: (MonadPretty m) => [m ()] -> m ()
 vsep ds = do
   buff <- getBuff
-  sequenceIntersperseM (tryFlat (text buff) hardLine) ds
-
-parenthesize :: (MonadPretty m) => m () -> m ()
-parenthesize d = do
-  punctuation $ text "("
-  localViewSet precedenceL (closedPrecedence 0) $ align d
-  punctuation $ text ")"
+  sintersperseExecute (tryFlat (text buff) hardLine) ds
 
 sexpListCons :: (MonadPretty m) => [m ()] -> Maybe (m ()) -> m ()
-sexpListCons ds dM = group $ parenthesize $ do
+sexpListCons ds dM = group $ parens $ do
   buffer $ vsep $ ds
   case dM of
     Nothing -> return ()
@@ -293,6 +253,12 @@ flatFillToR i m = do
   putView columnL c
   space delta
   flat m
+
+topLevel :: (MonadPretty m) => m a -> m a
+topLevel aM = do
+  doConsole <- askView doConsoleL
+  when doConsole emitConsoleStateCodes
+  group aM
 
 ----- ANSI Console helpers -----
 
@@ -354,6 +320,35 @@ keyword = localStyle keywordColorL . noConsole
 
 classifier :: (MonadPretty m) => m a -> m a
 classifier = localStyle classifierColorL . noConsole
+
+---------- Precedence ----------
+
+lteM :: (MonadPretty m) => Level -> m Bool
+lteM l = do
+  dl <- askView precDL
+  cl <- askView precLevel
+  return $ dlLte dl l cl
+
+atLevel :: (MonadPretty m) => Level -> m a -> m a
+atLevel = localViewSet precLevel
+
+withLattice :: (MonadPretty m) => DumbLattice -> m a -> m a
+withLattice = localViewSet precDL
+
+parens :: (MonadPretty m) => m () -> m ()
+parens aM = do
+  punctuation $ string "("
+  atLevel TopLevel aM
+  punctuation $ string ")"
+
+guardLevel :: (MonadPretty m) => Level -> m () -> m ()
+guardLevel l aM = do
+  b <- lteM l
+  let f = if b then id else parens
+  f $ atLevel l aM
+
+bump :: (MonadPretty m) => m a -> m a
+bump = localViewMod precLevel bumpLevel
 
 ----- Testing -----
 

@@ -39,7 +39,7 @@ _toStream xs0 = stream xs0 $ step
     step (x:xs) = S.Yield x xs
 
 _fromStream :: Int -> Stream a -> [a]
-_fromStream _ = S.iterR (:) []
+_fromStream _ = siterRev (:) []
 
 mapFirst :: (a -> a) -> [a] -> [a]
 mapFirst _ [] = []

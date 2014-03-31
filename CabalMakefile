@@ -21,10 +21,18 @@ bench:
 	./dist/build/bench/bench -o report.html
 
 interact:
-	ghci -isrc -XDataKinds -XScopedTypeVariables -XTypeOperators -interactive-print=Text.Pretty.pprintLn Interact.hs
+	ghci -isrc -XDataKinds -XScopedTypeVariables \
+	           -XTypeOperators -XTupleSections \
+					 	 -XPolyKinds -XKindSignatures -XGADTs \
+						 -XRankNTypes -XTypeFamilies -XGeneralizedNewtypeDeriving \
+						 -XConstraintKinds -XMultiParamTypeClasses \
+						 -XFlexibleInstances -XFlexibleContexts \
+						 -XTemplateHaskell -XOverloadedStrings \
+						 -XMagicHash \
+						 -interactive-print=FP.pprintLn Interact.hs
 
 interact-no-local:
-	ghci -XDataKinds -XScopedTypeVariables -XTypeOperators -interactive-print=Text.Pretty.pprintLn Interact.hs
+	ghci -XDataKinds -XScopedTypeVariables -XTypeOperators -interactive-print=FP.pprintLn Interact.hs
 
 interact-no-local2:
 	ghci -XDataKinds -XScopedTypeVariables -XTypeOperators

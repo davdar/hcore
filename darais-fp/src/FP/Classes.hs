@@ -6,7 +6,6 @@ module FP.Classes
   , module FP.Classes.PartialOrder
   , module FP.Classes.QQ
   , module FP.Classes.Sequence
-  , module FP.Classes.Sequence2D
   , module FP.Classes.Static
   , module FP.Classes.ToQQ
   ) where
@@ -18,6 +17,5 @@ import FP.Classes.Monoid
 import FP.Classes.PartialOrder
 import FP.Classes.QQ
 import FP.Classes.Sequence
-import FP.Classes.Sequence2D
 import FP.Classes.Static
 import FP.Classes.ToQQ

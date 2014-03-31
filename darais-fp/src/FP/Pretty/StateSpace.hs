@@ -2,7 +2,9 @@ module FP.Pretty.StateSpace where
 
 import Prelude ()
 import FP.PrePrelude
+import FP.Data.DumbLattice
 import FP.Classes.PartialOrder
+import qualified Data.Map as Map
 import FP.Data.Lens
 import FP.Data.Function
 import FP.Util.ConsoleState
@@ -82,7 +84,7 @@ defaultPalette = Palette
 data PrettyEnv = PrettyEnv
   -- layout options
   { _layoutWidthL :: Int
-  , _ribbonRatioL :: Double
+  , _ribbonWidthL :: Int
   -- dynamic environment
   , _nestingL :: Int
   , _layoutL :: Layout
@@ -99,13 +101,15 @@ data PrettyEnv = PrettyEnv
   , _consoleStateL :: ConsoleState
   , _doConsoleL :: Bool
   , _maxDecimalL :: Maybe Int
+  , _precDL :: DumbLattice
+  , _precLevel :: Level
   } deriving (Eq, Show)
 makeLens ''PrettyEnv
 
 defaultPrettyEnv :: PrettyEnv
 defaultPrettyEnv = PrettyEnv
   { _layoutWidthL = 80
-  , _ribbonRatioL = 0.8
+  , _ribbonWidthL = 100
   , _nestingL = 0
   , _layoutL = Break
   , _failureL = NoFail
@@ -115,6 +119,8 @@ defaultPrettyEnv = PrettyEnv
   , _consoleStateL = emptyConsoleState
   , _doConsoleL = True
   , _maxDecimalL = Nothing
+  , _precDL = Map.empty
+  , _precLevel = TopLevel
   }
 
 noConsolePrettyEnv :: PrettyEnv
@@ -140,3 +146,6 @@ defaultPrettyState = PrettyState
   }
 
 type (MonadPretty m) = (MonadRWSView PrettyEnv Text PrettyState m, MonadPlus m)
+
+checkMonadPretty :: (MonadPretty m) => m ()
+checkMonadPretty = error "don't evaluate this silly!"

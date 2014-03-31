@@ -2,10 +2,8 @@ module FP.Pretty.Concrete where
 
 import Prelude ()
 import FP.PrePrelude
-import FP.Data.Lens
 import FP.Classes.Monad
 import FP.Pretty.StateSpace
-import FP.Data.Function
 import qualified Data.Text as T
 import Data.Text (Text)
 import FP.Pretty.Generic
@@ -25,27 +23,24 @@ type instance MEnv (CPrettyT m) = PrettyEnv
 type instance MOut (CPrettyT m) = Text
 type instance MState (CPrettyT m) = PrettyState
 
-runCPrettyT :: PrettyEnv -> CPrettyT m a -> m (Maybe (a,PrettyState,Text))
-runCPrettyT r aM = runMaybeT $ runRWST (unCPrettyT aM) r defaultPrettyState
+checkMonadPretty_CPrettyT :: (Monad m) => CPrettyT m ()
+checkMonadPretty_CPrettyT = checkMonadPretty
 
-execCPrettyT :: (Monad m) => PrettyEnv -> CPrettyT m () -> m Text
-execCPrettyT env aM = do
-  let aM' = do
-        doConsole <- askView doConsoleL
-        when doConsole emitConsoleStateCodes
-        group aM
-  ((),_,t) <- liftM fromJust $ runCPrettyT env aM'
+runCPrettyT :: CPrettyT m a -> m (Maybe (a,PrettyState,Text))
+runCPrettyT aM = runMaybeT $ runRWST (unCPrettyT aM) defaultPrettyEnv defaultPrettyState
+
+execCPrettyT :: (Monad m) => CPrettyT m () -> m Text
+execCPrettyT aM = do
+  ((),_,t) <- liftM fromJust $ runCPrettyT aM
   return t
 
 type CPretty = CPrettyT Identity
 
-runCPretty :: PrettyEnv -> CPretty a -> Maybe (a, PrettyState, Text)
-runCPretty = runIdentity .: runCPrettyT
+runCPretty :: CPretty a -> Maybe (a, PrettyState, Text)
+runCPretty = runIdentity . runCPrettyT
 
-execCPretty :: PrettyEnv -> CPretty () -> Text
-execCPretty = runIdentity .: execCPrettyT
-
+execCPretty :: CPretty () -> Text
+execCPretty = runIdentity . execCPrettyT
 
 showPretty :: CPretty () -> String
-showPretty = T.unpack . execCPretty showPrettyEnv
-
+showPretty = T.unpack . execCPretty . topLevel

@@ -30,3 +30,4 @@ type family MState (m :: * -> *) :: *
 type MonadReader' m = (MonadReader (MEnv m) m)
 type MonadWriter' m = (MonadWriter (MOut m) m)
 type MonadState' m = (MonadState (MState m) m)
+type MonadRWS' m = (MonadReader' m, MonadWriter' m, MonadState' m)

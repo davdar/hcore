@@ -14,9 +14,13 @@ class HasLens a b where
   view :: Lens a b
 
 instance HasLens a a where
-  view = iso id id
+  view = id
+instance HasLens (a,b) a where
+  view = fstLens
+instance HasLens (a,b) b where
+  view = sndLens
 
-type MonadReaderView b m = (MonadReader' m, HasLens (MEnv m) b)
+type MonadReaderView r m = (MonadReader' m, HasLens (MEnv m) r)
 
 askView :: (MonadReaderView b m) => Lens b c -> m c
 askView l = liftM (getL $ l . view) ask
@@ -41,7 +45,7 @@ passView l = pass . liftM (id *** modL (l . view))
 censorView :: (MonadWriterView b m) => Lens b c -> (c -> c) -> m a -> m a
 censorView l f = passView l . liftM (,f)
 
-type MonadStateView b m = (MonadState' m, HasLens (MState m) b)
+type MonadStateView s m = (MonadState' m, HasLens (MState m) s)
 
 getView :: (MonadStateView b m) => Lens b c -> m c
 getView l = liftM (getL $ l . view) get
@@ -52,11 +56,4 @@ putView l = modify . setL (l . view)
 modifyView  :: (MonadStateView b m) => Lens b c -> (c -> c) -> m ()
 modifyView l = modify . modL (l . view)
 
-type (MonadRWS' m) = (MonadReader' m, MonadWriter' m, MonadState' m)
-type (MonadRWSView r o s m) =
-  ( MonadRWS' m
-  , HasLens (MEnv m) r
-  , HasLens (MOut m) o
-  , HasLens (MState m) s
-  )
-
+type (MonadRWSView r o s m) = (MonadReaderView r m, MonadWriterView o m, MonadStateView s m)

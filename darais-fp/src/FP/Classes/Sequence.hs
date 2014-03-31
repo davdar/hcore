@@ -8,6 +8,7 @@ import FP.Classes.Monad
 import qualified FP.Data.Stream as S
 import FP.Data.Stream (StreamT(..), Stream)
 import FP.Classes.Compat
+import Control.Monad.Cont
 
 class Sequence t where
   toStream :: (Compat t a) => t a -> Stream a
@@ -15,141 +16,124 @@ class Sequence t where
   length :: (Compat t a) => t a -> Int
   (!) :: (Compat t a) => t a -> Int -> a
 
+type instance Compat Stream = Universal
+instance Sequence Stream where
+  toStream = id
+  fromStream = const id
+  length = slength
+  (!) = sindexUnsafe
+
+-- Direct Conversion
+
+fromStreamP :: (Sequence t, Compat t a) => Proxy (t a) -> Int -> Stream a -> t a
+fromStreamP = const fromStream
+
 toStreamM :: (Monad m, Sequence t, Compat t a) => t a -> StreamT m a
 toStreamM = S.liftStream . toStream
-
-fromStreamT :: (Sequence t, Compat t a) => Proxy (t a) -> Int -> Stream a -> t a
-fromStreamT = const fromStream
 
 fromStreamM :: (Monad m, Sequence t, Compat t a) => Int -> StreamT m a -> m (t a)
 fromStreamM i = liftM (fromStream i) . S.run
 
-fromStreamMT :: (Monad m, Sequence t, Compat t a) => Proxy (t a) -> Int -> StreamT m a -> m (t a)
-fromStreamMT = const fromStreamM
+fromStreamMP :: (Monad m, Sequence t, Compat t a) => Proxy (t a) -> Int -> StreamT m a -> m (t a)
+fromStreamMP = const fromStreamM
 
-iterL :: (Sequence t, Compat t a) => (a -> b -> b) -> b -> t a -> b
-iterL f i = S.iterL f i . toStream
+-- "Primitive" ops which wrap around StreamT ops
 
-forIntersperseM :: (Monad m, Sequence t, Compat t a) => t a -> m () -> (a -> m ()) -> m ()
-forIntersperseM = S.exec ..: (S.forIntersperseM . toStreamM)
+smapM :: (Monad m, Sequence t, Compat t a, Compat t b) => (a -> m b) -> t a -> m (t b)
+smapM f xs = fromStreamM (length xs) $ S.mapM f $ toStreamM xs
 
-sequenceM :: (Monad m, Sequence t, Compat t (m ())) => t (m ()) -> m ()
-sequenceM = S.exec . S.sequenceM . toStreamM
+sintersperseMapM :: (Monad m, Sequence t, Compat t a, Compat t b) => (a -> m b) -> m b -> t a -> m (t b)
+sintersperseMapM f sep xs = fromStreamM (length xs) $ S.intersperseM sep $ smap f $ toStream xs
 
-sequenceIntersperseM :: (Monad m, Sequence t, Compat t (m ())) => m () -> t (m ()) -> m ()
-sequenceIntersperseM inter = S.exec . S.sequenceIntersperseM inter . toStreamM
+siterM :: (Monad m, Sequence t, Compat t a) => (a -> b -> m b) -> b -> t a -> m b
+siterM f i = S.iterM f i . toStreamM
 
-toStreamFromIndex :: (Monad m, Sequence t, Compat t a) => (a -> m b) -> t a -> StreamT m b
-toStreamFromIndex f t =
-  let l = length t
-  in StreamT 0 $ step l
-  where
-    step l i
-      | i == l = return $ S.Done
-      | otherwise = do
-          y <- f $ t ! i
-          return $ S.Yield y $ succ i
+-- Length and indexing
 
--- iterL :: (Iterable t) => (Elem t -> b -> b) -> b -> t -> b
--- iterL = flip . iterOnL
--- 
--- iterR :: (Iterable t) => (Elem t -> b -> b) -> b -> t -> b
--- iterR = flip . iterOnR
--- 
--- iterDoL :: (Iterable t) => t -> b -> (Elem t -> b -> b) -> b
--- iterDoL = flip . flip iterOnL
--- 
--- iterDoR :: (Iterable t) => t -> b -> (Elem t -> b -> b) -> b
--- iterDoR = flip . flip iterOnR
--- 
--- iterOnLM :: (Monad m, Iterable t) => (Elem t -> b -> m b) -> t -> b -> m b
--- iterOnLM f t = iterOnL ((=<<) . f) t . return
--- 
--- iterOnRM :: (Monad m, Iterable t) => (Elem t -> b -> m b) -> t -> b -> m b
--- iterOnRM f t = iterOnR ((=<<) . f) t . return
--- 
--- iterLM :: (Monad m, Iterable t) => (Elem t -> b -> m b) -> b -> t -> m b
--- iterLM = flip . iterOnLM
--- 
--- iterRM :: (Monad m, Iterable t) => (Elem t -> b -> m b) -> b -> t -> m b
--- iterRM = flip . iterOnRM
--- 
--- iterDoLM :: (Monad m, Iterable t) => t -> b -> (Elem t -> b -> m b) -> m b
--- iterDoLM = flip . flip iterOnLM
--- 
--- iterDoRM :: (Monad m, Iterable t) => t -> b -> (Elem t -> b -> m b) -> m b
--- iterDoRM = flip . flip iterOnRM
--- 
--- forLM :: (Monad m, Iterable t) => t -> (Elem t -> m ()) -> m ()
--- forLM t f = iterOnL (flip (>>) . f) t $ return ()
--- 
--- forRM :: (Monad m, Iterable t) => t -> (Elem t -> m ()) -> m ()
--- forRM t f = iterOnR (flip (>>) . f) t $ return ()
--- 
--- mapReduceDo :: (Iterable t) => t -> (b -> b -> b) -> b -> (Elem t -> b) -> b
--- mapReduceDo t r z f = iterL (r . f) z t
--- 
--- mapReduceDoM :: (Monad m, Iterable t) => t -> (b -> b -> b) -> b -> (Elem t -> m b) -> m b
--- mapReduceDoM t r z f = iterLM (\ e b -> liftM (r b) $ f e) z t
--- 
--- forBetweenLM :: (Monad m, Iterable t) => t -> m () -> (Elem t -> m ()) -> m ()
--- forBetweenLM t sep f = flip evalStateT True $ forLM t $ \ e -> do
---   isFirst <- get
---   put False
---   when (not isFirst) $ lift sep
---   lift $ f e
--- 
--- toList :: (Iterable t) => t -> [Elem t]
--- toList = iterR (:) []
--- 
--- infixl 9 !
--- class (Iterable t) => IdxIterable t where
---   type Index t :: *
---   iiterOnL :: (Index t -> Elem t -> b -> b) -> t -> b -> b
---   iiterOnR :: (Index t -> Elem t -> b -> b) -> t -> b -> b
---   (!) :: t -> Index t -> Elem t
--- 
--- iiterL :: (IdxIterable t) => (Index t -> Elem t -> b -> b) -> b -> t -> b
--- iiterL = flip . iiterOnL
--- 
--- iiterR :: (IdxIterable t) => (Index t -> Elem t -> b -> b) -> b -> t -> b
--- iiterR = flip . iiterOnR
--- 
--- iiterDoL :: (IdxIterable t) => t -> b -> (Index t -> Elem t -> b -> b) -> b
--- iiterDoL = flip . flip iiterOnL
--- 
--- iiterDoR :: (IdxIterable t) => t -> b -> (Index t -> Elem t -> b -> b) -> b
--- iiterDoR = flip . flip iiterOnR
--- 
--- iiterOnLM :: (Monad m, IdxIterable t) => (Index t -> Elem t -> b -> m b) -> t -> b -> m b
--- iiterOnLM f t = iiterOnL ((=<<) .: f) t . return
--- 
--- iiterOnRM :: (Monad m, IdxIterable t) => (Index t -> Elem t -> b -> m b) -> t -> b -> m b
--- iiterOnRM f t = iiterOnR ((=<<) .: f) t . return
--- 
--- iiterLM :: (Monad m, IdxIterable t) => (Index t -> Elem t -> b -> m b) -> b -> t -> m b
--- iiterLM = flip . iiterOnLM
--- 
--- iiterRM :: (Monad m, IdxIterable t) => (Index t -> Elem t -> b -> m b) -> b -> t -> m b
--- iiterRM = flip . iiterOnRM
--- 
--- iiterDoLM :: (Monad m, IdxIterable t) => t -> b -> (Index t -> Elem t -> b -> m b) -> m b
--- iiterDoLM = flip . flip iiterOnLM
--- 
--- iiterDoRM :: (Monad m, IdxIterable t) => t -> b -> (Index t -> Elem t -> b -> m b) -> m b
--- iiterDoRM = flip . flip iiterOnRM
--- 
--- iforLM :: (Monad m, IdxIterable t) => t -> (Index t -> Elem t -> m ()) -> m ()
--- iforLM t f = iiterOnL (flip (>>) .: f) t $ return ()
--- 
--- iforRM :: (Monad m, IdxIterable t) => t -> (Index t -> Elem t -> m ()) -> m ()
--- iforRM t f = iiterOnR (flip (>>) .: f) t $ return ()
--- 
--- iterOnLFromIiter :: (IdxIterable t) => (Elem t -> b -> b) -> t -> b -> b
--- iterOnLFromIiter f = iiterOnL (const f)
--- 
--- iterOnRFromIiter :: (IdxIterable t) => (Elem t -> b -> b) -> t -> b -> b
--- iterOnRFromIiter f = iiterOnR (const f)
--- 
--- itoList :: (IdxIterable t) => t -> [(Index t, Elem t)]
--- itoList = iiterR (curry (:)) []
+slength :: (Sequence t, Compat t a) => t a -> Int
+slength = flip execState 0 . straverse (const $ modify (+1))
+
+sindexM :: (MonadPlus m, Sequence t, Compat t a) => t a -> Int -> m a
+sindexM xs i = flip evalStateT 0 $ straverseSumOn xs $ \ x -> do
+  xi <- get
+  if i == xi
+    then return x
+    else mzero
+
+sindexUnsafe :: (Sequence t, Compat t a) => t a -> Int -> a
+sindexUnsafe = fromJust .: sindexM
+
+---- Derived Variants
+
+-- mapping
+
+smap :: (Sequence t, Compat t a, Compat t b) => (a -> b) -> t a -> t b
+smap f = runIdentity . smapM (return . f)
+
+smapOn :: (Sequence t, Compat t a, Compat t b) => t a -> (a -> b) -> t b
+smapOn = flip smap
+
+smapOnM :: (Monad m, Sequence t, Compat t a, Compat t b) => t a -> (a -> m b) -> m (t b)
+smapOnM = flip smapM
+
+ssequence :: (Monad m, Sequence t, Compat t (m a), Compat t a) => t (m a) -> m (t a)
+ssequence = smapM id
+
+sintersperseMap :: (Sequence t, Compat t a, Compat t b) => (a -> b) -> b -> t a -> t b
+sintersperseMap f sep = runIdentity . sintersperseMapM (return . f) (return sep)
+
+sintersperseMapOn :: (Sequence t, Compat t a, Compat t b) => t a -> b -> (a -> b) -> t b
+sintersperseMapOn xs sep f = sintersperseMap f sep xs
+
+sintersperseMapOnM :: (Monad m, Sequence t, Compat t a, Compat t b) => t a -> m b -> (a -> m b) -> m (t b)
+sintersperseMapOnM xs sep f = sintersperseMapM f sep xs
+
+-- iteration
+
+siter :: (Sequence t, Compat t a) => (a -> b -> b) -> b -> t a -> b
+siter f = runIdentity .: siterM (return .: f)
+
+siterFrom :: (Sequence t, Compat t a) => b -> (a -> b -> b) -> t a -> b
+siterFrom = flip siter
+
+siterOn :: (Sequence t, Compat t a) => t a -> b -> (a -> b -> b) -> b
+siterOn xs i f = siter f i xs
+
+siterOnM :: (Monad m, Sequence t, Compat t a) => t a -> b -> (a -> b -> m b) -> m b
+siterOnM xs bM f = siterM f bM xs
+
+siterRevM :: (Monad m, Sequence t, Compat t a) => (a -> b -> m b) -> b -> t a -> m b
+siterRevM f = flip runContT return .: siterM (\ x i' -> ContT $ \ k -> f x =<< k i')
+
+siterRev :: (Sequence t, Compat t a) => (a -> b -> b) -> b -> t a -> b
+siterRev f = runIdentity .: siterRevM (return .: f)
+
+siterRevOn :: (Sequence t, Compat t a) => t a -> b -> (a -> b -> b) -> b
+siterRevOn xs i f = siterRev f i xs
+
+siterRevOnM :: (Monad m, Sequence t, Compat t a) => t a -> b -> (a -> b -> m b) -> m b
+siterRevOnM xs bM f = siterM f bM xs
+
+straverse :: (Monad m, Sequence t, Compat t a) => (a -> m ()) -> t a -> m ()
+straverse f = siter ((>>) . f) (return ())
+
+straverseOn :: (Monad m, Sequence t, Compat t a) => t a -> (a -> m ()) -> m ()
+straverseOn = flip straverse
+
+sintersperseTraverse :: (Monad m, Sequence t, Compat t a) => (a -> m ()) -> m () -> t a -> m ()
+sintersperseTraverse f sep = S.exec . S.intersperseM sep . smap f . toStream
+
+sintersperseTraverseOn :: (Monad m, Sequence t, Compat t a) => t a -> m () -> (a -> m ()) -> m ()
+sintersperseTraverseOn xs sep f = sintersperseTraverse f sep xs
+
+straverseSum :: (MonadPlus m, Sequence t, Compat t a) => (a -> m b) -> t a -> m b
+straverseSum f = siter (mplus . f) mzero
+
+straverseSumOn :: (MonadPlus m, Sequence t, Compat t a) => t a -> (a -> m b) -> m b
+straverseSumOn = flip straverseSum
+
+sexecute :: (Monad m, Sequence t, Compat t (m ())) => t (m ()) -> m ()
+sexecute = straverse id
+
+sintersperseExecute :: (Monad m, Sequence t, Compat t (m ())) => m () -> t (m ()) -> m ()
+sintersperseExecute = sintersperseTraverse id

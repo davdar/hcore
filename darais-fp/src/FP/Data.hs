@@ -2,6 +2,7 @@ module FP.Data
   ( module FP.Data.BInt
   , module FP.Data.Compose
   , module FP.Data.Double
+  , module FP.Data.DumbLattice
   , module FP.Data.Either
   , module FP.Data.Ex
   , module FP.Data.Function
@@ -21,6 +22,7 @@ module FP.Data
 import FP.Data.BInt
 import FP.Data.Compose
 import FP.Data.Double
+import FP.Data.DumbLattice
 import FP.Data.Either
 import FP.Data.Ex
 import FP.Data.Function
