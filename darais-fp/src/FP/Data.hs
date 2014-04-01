@@ -9,6 +9,7 @@ module FP.Data
   , module FP.Data.LibEq
   , module FP.Data.List
   , module FP.Data.Lens
+  , module FP.Data.Maybe
   , module FP.Data.Nat
   , module FP.Data.Proxy
   , module FP.Data.SInt
@@ -29,6 +30,7 @@ import FP.Data.Function
 import FP.Data.LibEq
 import FP.Data.List
 import FP.Data.Lens
+import FP.Data.Maybe
 import FP.Data.Nat
 import FP.Data.Proxy
 import FP.Data.SInt

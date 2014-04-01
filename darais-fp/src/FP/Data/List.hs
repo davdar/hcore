@@ -12,11 +12,9 @@ import FP.Classes.Compat
 
 type instance Compat [] = Universal
 
-instance TFunctor [] where
-  mapM = _mapM
-
 instance CFunctor [] where
-  cmapM = mapM
+  cmapM = _List_mapM
+instance TFunctor [] where
 
 instance Sequence [] where
   toStream = _toStream
@@ -24,8 +22,8 @@ instance Sequence [] where
   length = List.length
   (!) = (List.!!)
 
-_mapM :: (Monad m) => (a -> m b) -> [a] -> m [b]
-_mapM f = loop
+_List_mapM :: (Monad m) => (a -> m b) -> [a] -> m [b]
+_List_mapM f = loop
   where
     loop [] = return []
     loop (x:xs) = do

@@ -73,6 +73,7 @@ library
                       , FP.Data.Function
                       , FP.Data.Indexed
                       , FP.Data.Lens
+                      , FP.Data.Maybe
                       , FP.Data.LibEq
                       , FP.Data.List
                       , FP.Data.Nat

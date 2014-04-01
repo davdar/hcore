@@ -3,6 +3,7 @@ module FP.Pretty.Class
   , MonadPretty
   ) where
 
+import Data.Function (on)
 import FP.Data.DumbLattice
 import FP.Data.Proxy
 import System.IO.Unsafe
@@ -25,6 +26,8 @@ import FP.Pretty.StateSpace
 import FP.Pretty.Generic
 import qualified Data.Text.IO as T
 
+data PrettyString = PrettyString { prettyString :: forall m. (MonadPretty m) => m () }
+
 class Pretty a where
   precLattice :: Proxy a -> DumbLattice
   precLattice Proxy = Map.empty
@@ -42,6 +45,8 @@ class Pretty a where
     . encloseSepDropIndent "[" "]" ","
     . map pretty
 
+instance Pretty PrettyString where
+  pretty = prettyString
 instance Pretty Bool where
   pretty = literal . string . show
 instance Pretty Int where
@@ -157,18 +162,32 @@ type PrettyF a = forall m. (MonadPretty m) => a -> m ()
 show' :: (Pretty a) => a -> String
 show' = showPretty . pretty
 
-pprint :: forall a. (Pretty a) => a -> IO ()
-pprint x = do
+instance Show PrettyString where
+  show = show'
+instance Eq PrettyString where
+  (==) = (==) `on` show'
+instance Ord PrettyString where
+  compare = compare `on` show'
+
+pprintWith :: forall a. (Pretty a) => (CPretty () -> CPretty ()) -> a -> IO ()
+pprintWith f x = do
   c <- liftM read $ readProcess "tput" ["cols"] ""
   T.putStr 
     $ execCPretty 
     $ localViewSet layoutWidthL c 
     $ withLattice (precLattice (proxy :: Proxy a)) 
     $ topLevel 
+    $ f
     $ pretty x
 
+pprint :: (Pretty a) => a -> IO ()
+pprint = pprintWith id
+
+pprintLnWith :: (Pretty a) => (CPretty () -> CPretty ()) -> a -> IO ()
+pprintLnWith f x = pprintWith f x >> putStrLn ""
+
 pprintLn :: (Pretty a) => a -> IO ()
-pprintLn x = pprint x >> putStrLn ""
+pprintLn = pprintLnWith id
 
 trace' :: (Pretty a) => String -> a -> b -> b
 trace' ann t x = unsafePerformIO $ do

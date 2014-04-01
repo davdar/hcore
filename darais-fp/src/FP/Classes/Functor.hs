@@ -33,11 +33,3 @@ map = cmap
 
 each :: (TFunctor t) => t a -> (a -> b) -> t b
 each = ceach
-
--- class CFunctor1 (t :: k -> * -> *) where
---   type Compat1 t :: * -> Constraint
---   cmap1M :: (Monad m, Compat1 t a, Compat1 t b) => (a -> m b) -> t i a -> m (t i b)
--- 
--- class CFunctor2 (t :: k1 -> k2 -> * -> *) where
---   type Compat2 t :: * -> Constraint
---   cmap2M :: (Monad m, Compat2 t a, Compat2 t b) => (a -> m b) -> t i j a -> m (t i j b)
